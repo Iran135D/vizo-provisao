@@ -1,0 +1,19 @@
+# Ambiente virtual
+.venv/
+venv/
+
+# Bancos locais
+*.db
+
+# Segredos (não subir)
+.env
+service_account.json
+client_secret.json
+token.json
+key API.txt
+
+# Cache / sistema
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
