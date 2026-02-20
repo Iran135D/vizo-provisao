@@ -1,0 +1,3273 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vizô - Assistente Virtual</title>
+    <style>
+        :root {
+            /* Paleta Futurista Neural */
+            --primary-gradient: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
+            --secondary-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            --bg-dark: #0f172a;
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --neon-glow: 0 0 15px rgba(0, 198, 255, 0.5);
+            --bot-bubble: rgba(51, 65, 85, 0.8);
+            --user-bubble: linear-gradient(135deg, #0f766e 0%, #0d9488 100%);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: transparent;
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 480px;
+            height: 100vh;
+            max-height: 100vh;
+            background: var(--bg-dark);
+            background-image:
+                radial-gradient(at 0% 0%, rgba(56, 239, 125, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(0, 198, 255, 0.1) 0px, transparent 50%);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+            /* Sombra para destacar */
+        }
+
+        .header {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(12px);
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 10;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .chat-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-info {
+            text-align: left;
+        }
+
+        .header-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+            margin-left: auto;
+        }
+
+        .lang-toggle {
+            position: relative;
+            width: 64px;
+            height: 22px;
+            border-radius: 999px;
+            border: 1px solid #1f2937;
+            background: rgba(15, 23, 42, 0.95);
+            display: flex;
+            align-items: center;
+            padding: 1px;
+            font-size: 10px;
+            color: #6b7280;
+            cursor: pointer;
+        }
+
+        .lang-option {
+            flex: 1;
+            text-align: center;
+            z-index: 2;
+            user-select: none;
+        }
+
+        .lang-option.active {
+            color: #e5e7eb;
+            font-weight: 600;
+        }
+
+        .lang-thumb {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 28px;
+            height: 18px;
+            border-radius: 999px;
+            background: #111827;
+            box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.4);
+            transition: transform 0.2s ease;
+        }
+
+        .lang-toggle.fr .lang-thumb {
+            transform: translateX(32px);
+        }
+
+        .avatar-container {
+            position: relative;
+            flex-shrink: 0;
+            margin-right: 0;
+            /* Controlado pelo gap agora */
+        }
+
+        .avatar {
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle at 30% 30%, #e9d5ff, #a855f7, #6b21a8);
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            z-index: 5;
+        }
+
+        .avatar::before, .avatar::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 1px solid rgba(168, 85, 247, 0.5);
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Waveform inside */
+        .avatar-wave {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            height: 25px;
+        }
+        .avatar-logo{
+            position:absolute;
+            width:60%;
+            height:auto;
+            z-index:1;
+            border-radius:50%;
+            image-rendering:-webkit-optimize-contrast
+        }
+
+        .avatar-wave span {
+            display: block;
+            width: 4px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 2px;
+            animation: none;
+            box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+        }
+
+        /* Speaking Animation */
+        .avatar.speaking {
+            box-shadow: 0 0 40px rgba(168, 85, 247, 0.9);
+            transform: scale(1.05);
+            border-color: rgba(255, 255, 255, 0.8);
+        }
+
+        .avatar.speaking::before {
+            animation: pulse-ring 2s infinite;
+        }
+
+        .avatar.speaking::after {
+            animation: pulse-ring 2s infinite 0.5s;
+        }
+
+        .avatar.speaking .avatar-wave span {
+            animation: wave-sound 0.8s infinite ease-in-out;
+        }
+
+        .avatar.speaking .avatar-wave span:nth-child(1) { animation-delay: 0.1s; }
+        .avatar.speaking .avatar-wave span:nth-child(2) { animation-delay: 0.2s; }
+        .avatar.speaking .avatar-wave span:nth-child(3) { animation-delay: 0.3s; }
+        .avatar.speaking .avatar-wave span:nth-child(4) { animation-delay: 0.2s; }
+        .avatar.speaking .avatar-wave span:nth-child(5) { animation-delay: 0.1s; }
+
+        @keyframes pulse-ring {
+            0% { width: 100%; height: 100%; opacity: 0.8; border-width: 2px; }
+            100% { width: 250%; height: 250%; opacity: 0; border-width: 0px; }
+        }
+
+        @keyframes wave-sound {
+            0%, 100% { height: 6px; opacity: 0.5; }
+            50% { height: 22px; opacity: 1; }
+        }
+
+        .status-dot {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 12px;
+            height: 12px;
+            background: #38ef7d;
+            border-radius: 50%;
+            border: 2px solid var(--bg-dark);
+            box-shadow: 0 0 10px #38ef7d;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(56, 239, 125, 0.7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 6px rgba(56, 239, 125, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(56, 239, 125, 0);
+            }
+        }
+
+        .header-info h3 {
+            font-size: 14.4px; /* Reduced by 10% from 16px */
+            font-weight: 600;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 2px;
+        }
+
+        .header-info p {
+            font-size: 10.8px; /* Reduced by 10% from 12px */
+            color: #38ef7d;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        /* Área de Chat com Scroll Moderno */
+        .chat-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+            /* Grid tecnológico sutil */
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding-bottom: 20px; /* Espaço extra antes do footer */
+        }
+
+        .chat-area::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-area::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+
+        /* Footer / Área de Input */
+        .chat-footer {
+            padding: 15px 20px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            z-index: 20;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.2);
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .chat-footer input {
+            width: 100%;
+            padding: 14px 20px;
+            border-radius: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            outline: none;
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .chat-footer input:focus {
+            border-color: #00c6ff;
+            box-shadow: 0 0 15px rgba(0, 198, 255, 0.15);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-footer input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .action-btn, .send-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.3s;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .action-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: #38ef7d; /* Verde Vizo */
+        }
+
+        .action-btn:hover {
+            background: rgba(56, 239, 125, 0.2);
+        }
+
+        .action-btn.recording {
+            animation: pulse-red 1.5s infinite;
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .send-btn {
+            background: var(--primary-gradient);
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 198, 255, 0.3);
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0, 198, 255, 0.5);
+        }
+
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        /* Mensagens - Cards Flutuantes */
+        .message {
+            max-width: 85%;
+            /* Reduzi levemente para não ficar muito largo */
+            width: fit-content;
+            /* Assegura que o balão abrace o conteúdo */
+            padding: 15px 20px;
+            /* Mais espaço interno */
+            border-radius: 18px;
+            font-size: 15px;
+            /* Fonte levemente maior */
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            /* Centraliza verticalmente o conteúdo */
+            margin: 0 auto;
+            /* Tenta centralizar o bloco se possível, mas flex parent governa */
+
+            position: relative;
+            animation: slideIn 0.3s ease-out;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.bot {
+            align-self: flex-start;
+            background: var(--bot-bubble);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            border-bottom-left-radius: 4px;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: var(--user-bubble);
+            color: white;
+            border-bottom-right-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .message .time {
+            font-size: 10px;
+            opacity: 0.7;
+            text-align: right;
+
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        /* Animação de digitação */
+        .typing {
+            font-style: italic;
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 5px;
+            margin-left: 10px;
+            display: none;
+        }
+
+        /* Fake Audio Player */
+        .audio-player {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 5px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 20px;
+            margin-top: 5px;
+            width: 200px;
+        }
+
+        .play-btn {
+            width: 30px;
+            height: 30px;
+            background: var(--secondary-color);
+            border-radius: 50%;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 4px;
+            background: #ccc;
+            border-radius: 2px;
+            position: relative;
+        }
+
+        .progress-fill {
+            width: 30%;
+            height: 100%;
+            background: var(--secondary-color);
+            border-radius: 2px;
+        }
+
+        .audio-time {
+            font-size: 10px;
+            color: #666;
+        }
+
+        /* Overlay de Início */
+        .start-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(15px);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+            cursor: pointer;
+            transition: opacity 0.5s ease-out;
+        }
+
+        .start-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .start-content {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 50px rgba(0, 198, 255, 0.2);
+            transform: scale(1);
+            transition: transform 0.3s ease;
+        }
+
+        .start-content:hover {
+            transform: scale(1.05);
+        }
+
+        .start-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 0 10px rgba(56, 239, 125, 0.5));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+            border: none;
+            padding: 15px 40px;
+            color: white;
+            font-size: 18px;
+            border-radius: 30px;
+            margin-top: 20px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1001;
+        }
+
+        .start-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(168, 85, 247, 0.6);
+        }
+        .header {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(12px);
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 10;
+        }
+        .info-btn {
+            background: var(--secondary-gradient);
+            color: #fff;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: var(--neon-glow);
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        .modal {
+            width: 90%;
+            max-width: 720px;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+        .tabs {
+            display: flex;
+            gap: 8px;
+            padding: 12px;
+            border-bottom: 1px solid var(--glass-border);
+            align-items: center;
+        }
+        .tab {
+            background: rgba(30, 41, 59, 0.8);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .tab.active {
+            background: var(--primary-gradient);
+            border-color: transparent;
+        }
+        .close-modal {
+            margin-left: auto;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 18px;
+            cursor: pointer;
+        }
+        .tab-content {
+            display: none;
+            padding: 16px;
+            max-height: 60vh;
+            overflow-y: auto;
+            line-height: 1.5;
+            color: var(--text-secondary);
+        }
+        .tab-content.active {
+            display: block;
+        }
+        
+    </style>
+</head>
+
+<body>
+
+
+    <!-- Overlay removido para início automático -->
+
+    <div class="chat-container">
+        <!-- Debug Panel (Hidden by default, toggle via console or if error occurs) -->
+        <div id="debugPanel" style="display:none; position:fixed; bottom:0; right:0; width:300px; height:200px; background:rgba(0,0,0,0.8); color:#0f0; font-size:10px; overflow-y:scroll; z-index:9999; padding:5px; border-top-left-radius:10px;">
+            <div style="border-bottom:1px solid #333; margin-bottom:5px; font-weight:bold;">SYSTEM LOG <button onclick="this.parentElement.parentElement.style.display='none'" style="float:right; background:none; border:none; color:red; cursor:pointer;">X</button></div>
+            <div id="debugContent"></div>
+        </div>
+
+        <div class="header">
+            <div class="chat-header">
+                <div class="avatar" id="botAvatar">
+                    <img src="logo_vizo.svg" alt="Vizô" class="avatar-logo">
+                    <div class="avatar-wave">
+                        <span></span><span></span><span></span><span></span><span></span>
+                    </div>
+                </div>
+                <div class="header-info">
+                    <h2>Vizô (Pró-Visão)</h2>
+                    <span>Online</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <div class="lang-toggle" id="langToggle">
+                    <div class="lang-option" data-lang="pt-BR">PT</div>
+                    <div class="lang-option" data-lang="fr-FR">FR</div>
+                    <div class="lang-thumb"></div>
+                </div>
+                <button id="infoBtn" class="info-btn">Informações</button>
+            </div>
+        </div>
+
+        <div class="chat-area" id="chatArea">
+            <!-- Mensagens aparecerão aqui -->
+        </div>
+        <div class="typing" id="typingIndicator">Vizô está digitando...</div>
+
+        <div id="infoModal" class="modal-overlay">
+            <div class="modal">
+                <div class="tabs">
+                    <button class="tab active" data-tab="priv">Política de Privacidade</button>
+                    <button class="tab" data-tab="direitos">Direitos de Uso</button>
+                    <button class="tab" data-tab="manual">Manual Técnico</button>
+                    <button class="close-modal" id="closeModal">✖</button>
+                </div>
+                <div class="tab-content active" id="tab-priv">
+                    <h3 style="margin-bottom:8px;color:#fff;font-size:18px;">Política de Privacidade</h3>
+                    <p>Coletamos apenas nome e WhatsApp para agendamento, confirmação e retornos de atendimento. Os dados são criptografados em armazenamento e acessados apenas por equipe autorizada. Retenção máxima: 6 meses, após o que são excluídos de forma segura. Você pode solicitar correção ou exclusão a qualquer momento.</p>
+                    <p style="margin-top:8px;">Base legal: consentimento do titular e execução de procedimentos preliminares relacionados ao atendimento. Não vendemos, compartilhamos ou utilizamos seus dados para fins não relacionados ao atendimento.</p>
+                </div>
+                <div class="tab-content" id="tab-direitos">
+                    <h3 style="margin-bottom:8px;color:#fff;font-size:18px;">Direitos de Uso</h3>
+                    <p>O chat destina-se a informações educativas, triagem e facilitação de agendamentos. Não substitui consulta presencial nem fornece diagnóstico médico. O conteúdo e a interface são de uso exclusivo da Pró-Visão e não podem ser copiados, distribuídos ou modificados sem autorização.</p>
+                    <p style="margin-top:8px;">Ao prosseguir, você concorda com o uso do seu nome e WhatsApp conforme a política acima. Não solicitamos CPF, salvo necessidade explícita e justificada.</p>
+                </div>
+                <div class="tab-content" id="tab-manual">
+                    <h3 style="margin-bottom:8px;color:#fff;font-size:18px;">Manual Técnico de Uso do Chat</h3>
+                    <p>1. Inicie a conversa e escolha uma opção do menu.</p>
+                    <p>2. Para agendar, informe nome e WhatsApp quando solicitado e dê o consentimento de uso dos dados.</p>
+                    <p>3. Para exames, descreva a necessidade; usamos equipamentos de altíssima precisão.</p>
+                    <p>4. Em urgências com dor intensa, trauma ou perda súbita de visão, procure imediatamente o pronto-socorro.</p>
+                    <p style="margin-top:8px;">Suporte técnico: utilize a opção de falar com atendente para reportar erros ou dificuldades.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-footer">
+            <button class="action-btn" id="micBtn" onclick="toggleRecording()" title="Gravar Áudio">🎙️</button>
+            <select id="micSelect" title="Microfone" style="margin-right:8px; display:none;"></select>
+            <div id="micMeter" style="width:60px;height:8px;background:#334155;border-radius:4px;overflow:hidden;display:none;margin-right:8px;">
+                <div id="micMeterFill" style="height:100%;width:0;background:#10b981;"></div>
+            </div>
+            <div class="input-wrapper">
+                <input type="text" id="userInput" placeholder="Digite ou fale..." onkeypress="handleEnter(event)">
+            </div>
+            <button class="send-btn" onclick="sendMessage()">➤</button>
+        </div>
+    </div>
+
+    <script>
+        // --- DEBUG SYSTEM ---
+        function logDebug(msg) {
+            console.log(msg);
+            const debugPanel = document.getElementById('debugPanel');
+            const debugContent = document.getElementById('debugContent');
+            if (debugContent) {
+                const entry = document.createElement('div');
+                entry.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+                debugContent.appendChild(entry);
+                debugPanel.scrollTop = debugPanel.scrollHeight;
+            }
+        }
+
+        function showDebug() {
+            const panel = document.getElementById('debugPanel');
+            if (panel) panel.style.display = 'block';
+        }
+
+        // --- LOGGING SYSTEM ---
+        function getSessionId() {
+            let sessionId = localStorage.getItem('vizo_session_id');
+            if (!sessionId) {
+                sessionId = 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('vizo_session_id', sessionId);
+            }
+            return sessionId;
+        }
+
+        let currentLang = localStorage.getItem('vizo_lang') || 'pt-BR';
+        let langAuto = true;
+        let hasUserInteraction = false;
+        let vizoInitialized = false;
+        let vizoInitPromise = null;
+        let premiumFrEnabled = false;
+
+        function isFrench() {
+            return premiumFrEnabled && (currentLang || 'pt-BR').toLowerCase().startsWith('fr');
+        }
+
+        function chooseText(pt, fr) {
+            if (isFrench() && fr) return fr;
+            return pt;
+        }
+
+        function detectLangFromText(text) {
+            if (!text) return currentLang || 'pt-BR';
+            const t = text.toLowerCase();
+            const frHints = ["bonjour", "bonsoir", "merci", "s'il vous plaît", "svp", "je suis", "je m'appelle"];
+            let scoreFr = 0;
+            frHints.forEach(w => {
+                if (t.includes(w)) scoreFr++;
+            });
+            if (scoreFr >= 2) return "fr-FR";
+            return "pt-BR";
+        }
+
+        function inferInterestFromText(text) {
+            if (!text) return null;
+            const t = text.toLowerCase();
+            if (t.includes("lentes evo")) return "Lentes EVO";
+            if (t.includes("catarata")) return "Cirurgia Catarata";
+            if (t.includes("urgencia") || t.includes("urgência")) return "Urgência";
+            if (t.includes("exame") || t.includes("checkup")) return "Exames Rotina";
+            if (t.includes("consulta") || t.includes("agendar")) return "Consulta Rotina";
+            return null;
+        }
+
+        async function logMessageToBackend(sender, message) {
+            try {
+                // Remover HTML tags para log limpo
+                const cleanMessage = message.replace(/<[^>]*>/g, '');
+                
+                await fetch('/api/log/message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: getSessionId(),
+                        sender: sender,
+                        message: cleanMessage
+                    })
+                });
+            } catch (e) {
+                console.error("Erro ao logar mensagem:", e);
+            }
+        }
+
+        function resetVizoTestState() {
+            try {
+                localStorage.removeItem('vizo_intro_fourhands_shown');
+                localStorage.removeItem('vizo_user_name');
+                localStorage.removeItem('vizo_user_phone');
+                localStorage.removeItem('vizo_pref_mode');
+                localStorage.removeItem('vizo_last_admin');
+                try {
+                    sessionStorage.removeItem('vizô_user');
+                } catch (e) {}
+                alert('Estado de teste do Vizô foi resetado neste navegador.');
+                location.reload();
+            } catch (e) {
+                console.error('Falha ao resetar estado de teste do Vizô:', e);
+            }
+        }
+
+        function createHiddenTestButton() {}
+
+        // Fila de Conversação para Gerenciamento de Áudio
+        const ConversationQueue = {
+            queue: [],
+            isSpeaking: false,
+            cancelled: false,
+
+            enqueue: function(messageHtml, textToSpeak, onComplete, showDisclaimer = false) {
+                // REMOVER EMOJIS SE FOR MODO BÁSICO
+                if (VizôBot.settings && VizôBot.settings.provider === 'edge_tts') {
+                    // Regex para emojis comuns
+                    const emojiRegex = /(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/g;
+                    messageHtml = messageHtml.replace(emojiRegex, '');
+                }
+
+                this.cancelled = false;
+
+                let finalHtml = messageHtml;
+                let speakText = textToSpeak;
+
+                if (VizôBot.userData && VizôBot.userData.preferredMode === 'text') {
+                    speakText = null;
+                }
+                const endsWithQuestion = /\?\s*$/.test(finalHtml);
+                const hasMenuHint = /menu|voltar ao menu/i.test(finalHtml);
+                if (endsWithQuestion && !hasMenuHint) {
+                    finalHtml += "\n\nOu digite 'menu' para voltar ao menu.";
+                }
+                // Adicionar player de áudio automaticamente se houver texto para falar mas não houver botão
+                if (speakText && !messageHtml.includes('play-btn') && typeof getAudioHTML === 'function') {
+                    // Estimar duração (opcional, visual)
+                    const duration = "0:" + String(Math.ceil(speakText.length / 15)).padStart(2, '0');
+                    finalHtml += "<br><br>" + getAudioHTML(duration, speakText);
+                }
+                
+                this.queue.push({ messageHtml: finalHtml, textToSpeak: speakText, onComplete, showDisclaimer });
+                this.processNext();
+            },
+
+            processNext: async function() {
+                if (this.isSpeaking || this.queue.length === 0) return;
+
+                const item = this.queue.shift();
+                this.isSpeaking = true;
+                const botAvatar = document.getElementById('botAvatar');
+                if (botAvatar) botAvatar.classList.add('speaking');
+
+                // 1. Iniciar pré-carregamento do áudio em paralelo (se houver texto)
+                const audioPromise = item.textToSpeak ? prefetchAudio(item.textToSpeak) : Promise.resolve(null);
+
+                // 2. Mostrar mensagem (aguarda a animação de digitação)
+                // addBotMessage agora retorna uma Promise com o elemento da mensagem
+                const msgElement = await VizôBot.addBotMessage(item.messageHtml, item.showDisclaimer, false);
+
+                // 3. Aguardar o áudio estar pronto (se houver)
+                try {
+                    await audioPromise;
+                } catch (e) {
+                    console.error("Falha no pré-carregamento do áudio:", e);
+                }
+
+                // 4. Tocar áudio
+                if (item.textToSpeak && msgElement) {
+                    const playBtn = msgElement.querySelector('.play-btn');
+
+                    if (playBtn) {
+                        try {
+                            // playTTS vai usar o áudio do cache se tiver sido pré-carregado
+                            await playTTS(playBtn, item.textToSpeak);
+                        } catch (e) {
+                            console.error("Erro no áudio da fila:", e);
+                        }
+                    } else {
+                        // Fallback se não tiver botão (apenas texto)
+                        await new Promise(r => setTimeout(r, 2000));
+                    }
+                } else {
+                    // Pequeno delay se não tiver áudio para leitura
+                    await new Promise(r => setTimeout(r, 1000));
+                }
+
+                this.isSpeaking = false;
+                // botAvatar já foi declarado acima
+                if (botAvatar) botAvatar.classList.remove('speaking');
+                if (!this.cancelled && item.onComplete) item.onComplete();
+                
+                // Processar próximo
+                if (!this.cancelled) {
+                    this.processNext();
+                }
+            },
+
+            interrupt: function() {
+                try {
+                    this.queue = [];
+                    this.cancelled = true;
+                    this.isSpeaking = false;
+
+                    const botAvatar = document.getElementById('botAvatar');
+                    if (botAvatar) botAvatar.classList.remove('speaking');
+
+                    // Parar TTS do navegador
+                    try {
+                        window.speechSynthesis.cancel();
+                    } catch (e) {}
+
+                    // Resolver qualquer promise pendente de TTS
+                    if (typeof currentTTSResolve !== 'undefined' && currentTTSResolve) {
+                        currentTTSResolve();
+                        currentTTSResolve = null;
+                    }
+
+                    // Parar áudio global de API se existir
+                    if (typeof currentGlobalAudio !== 'undefined' && currentGlobalAudio) {
+                        try {
+                            currentGlobalAudio.pause();
+                        } catch (e) {}
+                        if (currentGlobalAudio._resolvePromise) {
+                            currentGlobalAudio._resolvePromise();
+                        }
+                        currentGlobalAudio = null;
+                    }
+                } catch (e) {
+                    console.error("Erro ao interromper fila de conversação:", e);
+                }
+            }
+        };
+
+        
+        // Lógica do Bot (Portado do Python)
+        const VizôBot = {
+            state: "MENU",
+            userData: {},
+            sourceData: {}, // Para armazenar dados de origem (UTM/Referer)
+            campaignSettings: {}, // Configurações de campanha
+            settings: {}, // Configurações gerais (voz/provider)
+            invalidAttempts: 0,
+            salesForm: {},
+            salesFormStep: 0,
+            forceSales: false,
+
+            loadSettings: async function() {
+                try {
+                    logDebug("Fetching settings...");
+                    // Timeout de 3 segundos
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 3000);
+                    
+                    const response = await fetch('/api/settings', { signal: controller.signal });
+                    clearTimeout(timeoutId);
+                    
+                    this.settings = await response.json();
+                    // Francês permanece bloqueado no chat (somente visual e para futuras ativações)
+                    premiumFrEnabled = false;
+                    logDebug("Settings fetched successfully");
+                } catch (e) {
+                    logDebug("Erro ao carregar settings (usando default): " + e.message);
+                    console.error("Erro ao carregar settings:", e);
+                    this.settings = { provider: 'edge_tts' };
+                }
+            },
+
+            loadCampaigns: async function() {
+                try {
+                    const response = await fetch('/api/campaigns');
+                    this.campaignSettings = await response.json();
+                } catch (e) {
+                    console.error("Erro ao carregar campanhas:", e);
+                }
+            },
+
+            especialistas: [
+                "Dr. Lucas Rezende", "Dra. Ana Catarina", "Dr. Tarcísio Guerra",
+                "Dr. Augusto Almeida", "Dra. Nabila Demachki", "Dra. Roseni Lopes",
+                "Dra. Michele Gonçalves"
+            ],
+            salesDemoIndex: 0,
+            salesDemoScenarios: [
+                {
+                    doctor: "Dr. Lucas Rezende",
+                    patientName: "Carlos Souza",
+                    need: "uma avaliação para cirurgia de catarata",
+                    service: "consulta com avaliação completa para catarata",
+                    date: "15/08",
+                    time: "15:30"
+                },
+                {
+                    doctor: "Dra. Ana Catarina",
+                    patientName: "Mariana Lima",
+                    need: "um check-up oftalmológico de rotina",
+                    service: "consulta de check-up com exame completo de visão",
+                    date: "20/08",
+                    time: "09:00"
+                },
+                {
+                    doctor: "Dr. Tarcísio Guerra",
+                    patientName: "Rodrigo Alves",
+                    need: "avaliar uma suspeita de glaucoma",
+                    service: "consulta especializada em glaucoma",
+                    date: "05/09",
+                    time: "14:00"
+                },
+                {
+                    doctor: "Dr. Augusto Almeida",
+                    patientName: "Patrícia Nunes",
+                    need: "investigar um quadro de olho seco e ardência",
+                    service: "consulta para avaliação de superfície ocular e olho seco",
+                    date: "12/09",
+                    time: "10:30"
+                },
+                {
+                    doctor: "Dra. Nabila Demachki",
+                    patientName: "Fernanda Sousa",
+                    need: "avaliar a retina após um diabetes descompensado",
+                    service: "consulta com avaliação detalhada de retina",
+                    date: "18/09",
+                    time: "16:15"
+                },
+                {
+                    doctor: "Dra. Roseni Lopes",
+                    patientName: "Beatriz Costa",
+                    need: "acompanhar o uso de lentes de contato",
+                    service: "consulta para adaptação e acompanhamento de lentes de contato",
+                    date: "22/09",
+                    time: "11:45"
+                },
+                {
+                    doctor: "Dra. Michele Gonçalves",
+                    patientName: "André Santos",
+                    need: "avaliar a visão após uma cirurgia prévia",
+                    service: "consulta de controle pós-operatório oftalmológico",
+                    date: "30/09",
+                    time: "08:15"
+                }
+            ],
+            practiceDemo: null,
+
+            matchDoctorByName: function(input) {
+                if (!input) return null;
+                const normalize = (str) => {
+                    return String(str || "")
+                        .toLowerCase()
+                        .normalize("NFD").replace(/[\u0300-\u036f]/g, '')
+                        .replace(/\b(dra|dr|doutora|doutor)\b\.?/g, '')
+                        .replace(/[^a-z\s]/g, ' ')
+                        .replace(/\s{2,}/g, ' ')
+                        .trim();
+                };
+                const inNorm = normalize(input);
+                if (!inNorm) return null;
+                let found = null;
+                this.especialistas.forEach(med => {
+                    const medNorm = normalize(med);
+                    if (medNorm && (inNorm === medNorm || inNorm.includes(medNorm) || medNorm.includes(inNorm))) {
+                        if (!found) found = med;
+                    }
+                });
+                return found;
+            },
+
+            disclaimer: "\n\nℹ️ Este atendimento está sendo criado para a Pró-Visão Saúde Ocular, em Macapá.",
+
+            init: async function () {
+                logDebug("VizôBot.init() started");
+                await this.loadSettings(); // Carregar settings antes de tudo
+                logDebug("Settings loaded");
+                this.loadCampaigns(); // Carregar campanhas
+                this.captureSource();
+                logDebug("Source captured");
+
+                // Sincronizar contexto de administrador e evitar reaproveitar nome/telefone de sessões anteriores
+                try {
+                    const adminUser = window.sessionStorage ? window.sessionStorage.getItem('vizô_user') : null;
+                    const lastAdmin = localStorage.getItem('vizo_last_admin');
+                    if (adminUser && adminUser !== lastAdmin) {
+                        localStorage.removeItem('vizo_user_name');
+                        localStorage.removeItem('vizo_user_phone');
+                        localStorage.setItem('vizo_last_admin', adminUser);
+                        logDebug("Contexto de admin alterado, dados de usuário limpos");
+                    }
+                    if ((adminUser || "").toUpperCase() === "FOURHANDS") {
+                        this.forceSales = true;
+                        logDebug("Modo vendas forçado para FOURHANDS");
+                    }
+                } catch (e) {
+                    console.warn("Não foi possível sincronizar contexto de admin:", e);
+                }
+
+                // Remover emoji do disclaimer se for modo básico
+                if (this.settings.provider === 'edge_tts') {
+                    this.disclaimer = this.disclaimer.replace('ℹ️ ', '');
+                }
+
+                // Verificar se já tem nome salvo (simulação de retorno)
+                const savedName = localStorage.getItem('vizo_user_name');
+                const savedPhone = localStorage.getItem('vizo_user_phone');
+
+                const savedMode = localStorage.getItem('vizo_pref_mode');
+                if (savedMode) {
+                    this.userData.preferredMode = savedMode;
+                }
+
+                if (savedName && savedPhone) {
+                    this.userData.nome = savedName;
+                    this.userData.whatsapp = savedPhone;
+                    const ptMsg = `Olá, ${savedName}! Que bom ter você de volta!`;
+                    const frMsg = `Bonjour, ${savedName} ! Quel plaisir de vous revoir !`;
+                    const msg = chooseText(ptMsg, frMsg);
+                    ConversationQueue.enqueue(
+                        msg + "\n\n" + getAudioHTML("0:05", msg),
+                        msg,
+                        null,
+                        true
+                    );
+
+                    if (this.entryContext === 'comercial') {
+                        this.showVizoSalesIntro();
+                    } else {
+                        const _menu = this.getMenuText();
+                        if (_menu) {
+                            const ptVoice = "Posso agendar sua consulta, explicar sobre nossos exames ou chamar um especialista humano. Por favor, escolha uma opção abaixo ou digite sua dúvida.";
+                            const frVoice = "Je peux programmer votre rendez‑vous, expliquer vos examens ou appeler un spécialiste humain. Choisissez une option ci‑dessous ou tapez votre question.";
+                            ConversationQueue.enqueue(
+                                _menu,
+                                chooseText(ptVoice, frVoice),
+                                () => { this.state = "MENU"; }
+                            );
+                        }
+                    }
+
+                } else {
+                    let msg;
+                    let speakMsg;
+                    let adminUserFromSession = null;
+                    try {
+                        adminUserFromSession = window.sessionStorage ? window.sessionStorage.getItem('vizô_user') : null;
+                    } catch (e) {
+                        adminUserFromSession = null;
+                    }
+                    const isFourHandsAdmin = (adminUserFromSession || "").toUpperCase() === "FOURHANDS";
+                    if (isFourHandsAdmin && !localStorage.getItem('vizo_intro_fourhands_shown')) {
+                        const ptMsg = "Olá! Este é um chat em desenvolvimento pela QD SYNAPSE INOVA LTDA. para o cliente FOUR HANDS. Você pode utilizá-lo por texto e por áudio; o uso de áudio também funciona como um recurso de acessibilidade para quem tem dificuldade de leitura. Ele pode ser aprimorado a qualquer momento e esta tecnologia foi criada exclusivamente para a FOUR HANDS. Para começarmos, por favor, digite ou fale seu nome pausadamente para eu compreender.";
+                        const ptSpeak = "Olá! Este é um chat em desenvolvimento pela Quê Dê Sinapse Inova Limitada para o cliente FOUR HANDS. Você pode utilizá-lo por texto e por áudio; o uso de áudio também funciona como um recurso de acessibilidade para quem tem dificuldade de leitura. Ele pode ser aprimorado a qualquer momento e esta tecnologia foi criada exclusivamente para a FOUR HANDS. Para começarmos, por favor, digite ou fale seu nome pausadamente para eu compreender.";
+                        const frMsg = "Bonjour ! Ceci est un chat en cours de développement par QD SYNAPSE INOVA LTDA. pour le client FOUR HANDS. Vous pouvez l’utiliser par texte ou par audio ; l’audio fonctionne aussi comme ressource d’accessibilité pour les personnes ayant des difficultés de lecture. Il peut être amélioré à tout moment et cette technologie a été créée exclusivement pour FOUR HANDS. Pour commencer, écrivez ou dites votre nom lentement pour que je le comprenne bien.";
+                        const frSpeak = frMsg;
+                        msg = chooseText(ptMsg, frMsg);
+                        speakMsg = chooseText(ptSpeak, frSpeak);
+                        localStorage.setItem('vizo_intro_fourhands_shown', '1');
+                    } else {
+                        const ptMsg2 = "Olá! Eu sou o Vizô, seu assistente virtual da Pró-Visão Saúde Ocular Macapá. Posso me chamar do nome que desejar. Para iniciarmos nosso atendimento, por favor, digite ou fale seu nome pausadamente para eu compreender.";
+                        const frMsg2 = "Bonjour ! Je suis Vizô, votre assistant virtuel de Pró‑Visão Santé Oculaire Macapá. Je peux porter le nom que vous préférez. Pour commencer notre prise en charge, écrivez ou dites votre nom lentement pour que je le comprenne bien.";
+                        msg = chooseText(ptMsg2, frMsg2);
+                        speakMsg = msg;
+                    }
+                    ConversationQueue.enqueue(
+                        msg + "\n\n" + getAudioHTML("0:12", speakMsg),
+                        speakMsg,
+                        () => { this.state = "WAITING_NAME"; },
+                        true
+                    );
+                }
+
+                // Log da sessão iniciada com a fonte
+                console.log("[METRICS] SESSION_START", this.sourceData);
+            },
+
+            captureSource: function () {
+                const urlParams = new URLSearchParams(window.location.search);
+                let adminUser = '';
+                try {
+                    adminUser = window.sessionStorage ? (window.sessionStorage.getItem('vizô_user') || '') : '';
+                } catch (e) {
+                    adminUser = '';
+                }
+                const adminUpper = adminUser.trim().toUpperCase();
+                const isVisitor = adminUpper === 'VISITANTE';
+                if (!isVisitor && adminUpper.length > 0) {
+                    this.entryContext = 'comercial';
+                    this.forceSales = true;
+                } else {
+                    this.entryContext = 'clinico';
+                    this.forceSales = false;
+                }
+                this.sourceData = {
+                    source: urlParams.get('source') || urlParams.get('utm_source') || 'direct',
+                    medium: urlParams.get('medium') || urlParams.get('utm_medium') || 'unknown',
+                    campaign: urlParams.get('campaign') || urlParams.get('utm_campaign') || 'unknown',
+                    referrer: document.referrer || 'direct',
+                    context: this.entryContext
+                };
+            },
+
+            // Menu options (HTML)
+            getMenuText: function () {
+                let isFourHandsAdmin = false;
+                try {
+                    const u = window.sessionStorage ? window.sessionStorage.getItem('vizô_user') : null;
+                    isFourHandsAdmin = (u || "").toUpperCase() === "FOURHANDS";
+                } catch (e) {
+                    isFourHandsAdmin = false;
+                }
+                if (this.forceSales && isFourHandsAdmin) {
+                    return "";
+                }
+                const isBasic = this.settings.provider === 'edge_tts';
+                const e = (char) => isBasic ? '' : char + ' ';
+
+                let campaignHtml = '';
+                if (this.campaignSettings && this.campaignSettings.active_campaign && this.campaignSettings.campaign_message) {
+                    campaignHtml = `
+                    <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid #38ef7d; padding: 12px; border-radius: 12px; margin-bottom: 15px; font-size: 0.95em; color: #38ef7d;">
+                        ${e('📢')}<strong>Destaque:</strong> ${this.campaignSettings.campaign_message}
+                    </div>`;
+                }
+
+                if (isFrench()) {
+                    return campaignHtml + `
+                    <div class="menu-options">
+                        <button onclick="chatWidget.handleOption('1')">1️⃣ ${e('📅')}Prendre rendez-vous</button>
+                        <button onclick="chatWidget.handleOption('2')">2️⃣ ${e('👁️')}Examens et procédures</button>
+                        <button onclick="chatWidget.handleOption('3')">3️⃣ ${e('👨‍⚕️')}Équipe médicale</button>
+                        <button onclick="chatWidget.handleOption('4')">4️⃣ ${e('💬')}Parler à un assistant</button>
+                        <button onclick="chatWidget.handleOption('5')">5️⃣ ${e('📂')}Recevoir les derniers examens</button>
+                    </div>`;
+                }
+
+                return campaignHtml + `
+                <div class="menu-options">
+                    <button onclick="chatWidget.handleOption('1')">1️⃣ ${e('📅')}Agendar Consulta</button>
+                    <button onclick="chatWidget.handleOption('2')">2️⃣ ${e('👁️')}Exames e Procedimentos</button>
+                    <button onclick="chatWidget.handleOption('3')">3️⃣ ${e('👨‍⚕️')}Corpo Clínico</button>
+                    <button onclick="chatWidget.handleOption('4')">4️⃣ ${e('💬')}Falar com Atendente</button>
+                    <button onclick="chatWidget.handleOption('5')">5️⃣ ${e('📂')}Receber Últimos Exames</button>
+                </div>`;
+            },
+
+            showVizoSalesIntro: function () {
+            const msgPt = "🤖 *Vizô — Sua IA de Vendas e Atendimento 24h* 👁️✨\n\nEu sou o Vizô, o assistente inteligente desenvolvido pela QD Synapse Inova Ltda. em parceria com a Pró-Visão. Não tiro folga e não perco oportunidade.\n\nHoje, com o meu chat você consegue:\n\n✅ Recepção profissional de cada paciente, com nome, WhatsApp e, se desejar, CPF ou outro identificador registrados para contato.\n✅ Roteiro guiado que leva do primeiro “oi”, do primeiro “bom dia”, até o agendamento da consulta.\n✅ Explicações claras sobre exames, equipe médica e serviços, sem deixar dúvidas.\n✅ Encaminhamento rápido para um humano, quando a conversa precisa de um especialista.\n\nTudo isso já conectado ao painel Vizô Analytics, desenvolvido pela QD Synapse Inova Ltda., para que a gestão enxergue em tempo real:\n\n- Quantas pessoas falaram com o robô.\n- Quantas viraram agendamento ou lead de WhatsApp.\n- Quais caminhos mais trazem resultado para a clínica.\n\nE o melhor: esse é só o começo.\n\nEmbora este exemplo esteja configurado para a Pró-Visão Saúde Ocular, o Vizô foi criado e é evoluído pela QD Synapse Inova Ltda. e pode ser adaptado para outras áreas comerciais e empresariais, do atacado ao varejo.\n\nPróximos passos da evolução do Vizô:\n\n🚀 IA mais persuasiva para aumentar conversão de agendamentos.\n🚀 Campanhas automáticas para reativar pacientes que sumiram.\n🚀 Triagem por voz e vídeo, ajudando a priorizar quem mais precisa.\n🚀 Integração profunda com ERP e prontuário, reduzindo trabalho manual da equipe.\n\nEscolha um tópico para saber mais:\n01️⃣ Voz\n02️⃣ Vídeo\n03️⃣ Integrações\n04️⃣ Investimentos\n05️⃣ Vizô na Prática\n06️⃣ Voltar ao menu\n07️⃣ Reativação de Pacientes";
+                const msgFr = "🤖 *Vizô — Votre IA de ventes et de service 24h/24* 👁️✨\n\nJe suis Vizô, l’assistant intelligent développé par QD Synapse Inova Ltda., en partenariat avec Pró‑Visão. Je ne prends jamais de congé et ne laisse passer aucune opportunité.\n\nAujourd’hui, avec mon chat vous pouvez :\n\n✅ Assurer un accueil professionnel de chaque patient, avec son nom, son WhatsApp et, si vous le souhaitez, son CPF ou un autre identifiant enregistrés pour le recontacter.\n✅ Suivre un parcours guidé qui vous accompagne du tout premier « bonjour », du premier « bon matin », jusqu’à la prise de rendez‑vous.\n✅ Offrir des explications claires sur les examens, l’équipe médicale et les services, sans laisser de doutes.\n✅ Transférer rapidement vers un humain lorsque la conversation exige un spécialiste.\n\nTout cela déjà connecté au tableau de bord Vizô Analytics, développé par QD Synapse Inova Ltda., pour que la direction voie en temps réel :\n\n- Combien de personnes ont parlé avec le robot.\n- Combien se sont transformées en rendez‑vous ou en leads WhatsApp.\n- Quels parcours apportent le plus de résultats pour la clinique.\n\nEt le mieux, c’est que ce n’est que le début.\n\nMême si cet exemple est configuré pour Pró‑Visão Santé Oculaire, Vizô a été créé et est fait évoluer par QD Synapse Inova Ltda., et peut être adapté à d’autres secteurs commerciaux et d’entreprise, de la vente en gros au détail.\n\nProchaines étapes de l’évolution de Vizô :\n\n🚀 Une IA plus persuasive pour augmenter la conversion des rendez‑vous.\n🚀 Des campagnes automatiques pour réactiver les patients qui ont disparu.\n🚀 Un pré‑tri par voix et vidéo, pour aider à prioriser ceux qui ont le plus besoin de soins.\n🚀 Une intégration profonde avec l’ERP et le dossier médical, réduisant le travail manuel de l’équipe.\n\nChoisissez un sujet pour en savoir plus :\n01️⃣ Voix\n02️⃣ Vidéo\n03️⃣ Intégrations\n04️⃣ Investissements\n05️⃣ Vizô en pratique\n06️⃣ Retourner au menu\n07️⃣ Réactivation des patients";
+                const voicePt = "Vizô — Sua IA de Vendas e Atendimento 24h. Eu sou o Vizô, o assistente inteligente desenvolvido pela QD Synapse Inova Ltda. em parceria com a Pró-Visão, que não tira folga e não perde oportunidade. Hoje, com o meu chat você consegue uma recepção profissional de cada paciente, com nome, WhatsApp e, se desejar, CPF ou outro identificador registrados para contato; roteiro guiado que leva do primeiro oi, do primeiro bom dia, até o agendamento da consulta; explicações claras sobre exames, equipe médica e serviços, sem deixar dúvidas; e encaminhamento rápido para um humano, quando a conversa precisa de um especialista. Tudo isso já conectado ao painel Vizô Analytics, desenvolvido pela QD Synapse Inova Ltda. Embora este exemplo esteja configurado para a Pró-Visão Saúde Ocular, o Vizô foi criado pela QD Synapse Inova Ltda. e pode ser adaptado para outras áreas comerciais e empresariais, do atacado ao varejo. Entre os próximos passos, teremos uma IA ainda mais persuasiva, campanhas automáticas para reativação, triagem por voz e vídeo e integração profunda com ERP e prontuário. Agora, escolha na tela o tópico que você quer conhecer melhor.";
+                const voiceFr = "Vizô — votre IA de ventes et de service 24h/24. Je suis Vizô, l’assistant intelligent développé par QD Synapse Inova Ltda., en partenariat avec Pró‑Visão, qui ne prend jamais de congé et ne laisse passer aucune opportunité. Aujourd’hui, avec mon chat, vous pouvez assurer un accueil professionnel de chaque patient, avec son nom, son WhatsApp et, si vous le souhaitez, son CPF ou un autre identifiant enregistrés pour le recontacter ; suivre un parcours guidé qui vous accompagne du premier bonjour, du premier « bon matin », jusqu’à la prise de rendez‑vous ; offrir des explications claires sur les examens, l’équipe médicale et les services, sans laisser de doutes ; et transférer rapidement la conversation vers un humain lorsque l’intervention d’un spécialiste est nécessaire. Tout cela est déjà connecté au tableau de bord Vizô Analytics, développé par QD Synapse Inova Ltda. Même si cet exemple est configuré pour Pró‑Visão Santé Oculaire, Vizô a été créé par QD Synapse Inova Ltda. et peut être adapté à d’autres secteurs commerciaux et d’entreprise, de la vente en gros au détail. Parmi les prochaines étapes, nous aurons une IA encore plus persuasive, des campagnes automatiques de réactivation, un pré‑tri par voix et vidéo et une intégration profonde avec l’ERP et le dossier médical. Maintenant, choisissez sur l’écran le sujet que vous souhaitez découvrir en priorité.";
+                const msg = chooseText(msgPt, msgFr);
+                const msgVoice = chooseText(voicePt, voiceFr);
+                ConversationQueue.enqueue(msg, msgVoice);
+                this.state = "VIZO_SALES_OPTIONS";
+                this.forceSales = true;
+            },
+
+            handleOption: function (opt) {
+                this.processInput(opt);
+            },
+
+            processInput: function (input) {
+                const raw = input.trim();
+                const text = raw.toLowerCase();
+
+                if (!this.userData.interest) {
+                    const inferred = inferInterestFromText(raw);
+                    if (inferred) {
+                        this.userData.interest = inferred;
+                    }
+                }
+
+                // Qualquer nova entrada do usuário interrompe a fala atual
+                ConversationQueue.interrupt();
+
+                const normalized = text.normalize("NFD").replace(/[\u0300-\u036f]/g, '');
+                const wantsAddress = normalized.includes("endereco") || normalized.includes("endereco da clinica") || normalized.includes("endereco da clínica") || normalized.includes("onde fica") || normalized.includes("localiza") || normalized.includes("como chegar");
+                const wantsPhone = normalized.includes("telefone") || normalized.includes("whatsapp") || normalized.includes("numero da clinica") || normalized.includes("número da clinica") || normalized.includes("numero da clínica") || normalized.includes("contato");
+                const wantsInfo = normalized.includes("horario") || normalized.includes("horário de funcionamento") || normalized.includes("funcionamento") || normalized.includes("site") || normalized.includes("instagram") || normalized.includes("redes sociais");
+
+                if (wantsAddress || wantsPhone || wantsInfo) {
+                    const msgPt = "Anote os principais dados da Pró-Visão Saúde Ocular Macapá:\n\nEndereço: Av. Mendonça Furtado, 2435 – Bairro Santa Rita – Macapá/AP, CEP 68901-254.\nWhatsApp para agendamentos: (96) 99151-7001.\nLigações e SMS: (96) 4009-3853.\nTelefone alternativo: (96) 99149-3541.\nHorário de funcionamento: segunda a sexta, das 07h00 às 18h00. Sábado e domingo: fechado.\nSite oficial: https://provisaomacapa.com.br/\nInstagram: @provisao_oftalmologia.\n\nSe precisar, posso continuar te ajudando com agendamentos e dúvidas aqui mesmo.";
+                    const msgFr = "Voici les principales informations de Pró-Visão Santé Oculaire Macapá :\n\nAdresse : Av. Mendonça Furtado, 2435 – Quartier Santa Rita – Macapá/AP, CEP 68901-254.\nWhatsApp pour les rendez-vous : +55 (96) 99151-7001.\nTéléphone pour appels et SMS : +55 (96) 4009-3853.\nTéléphone alternatif : +55 (96) 99149-3541.\nHoraires d’ouverture : du lundi au vendredi, de 7h00 à 18h00. Samedi et dimanche : fermé.\\nSite officiel : https://provisaomacapa.com.br/\nInstagram : @provisao_oftalmologia.\n\nSi vous le souhaitez, je peux continuer à vous aider pour les rendez-vous et vos questions ici même.";
+                    const msg = chooseText(msgPt, msgFr);
+                    ConversationQueue.enqueue(msg, msgPt);
+                    return;
+                }
+
+                // --- FLUXO DE ENTRADA DE DADOS (PRIORITÁRIO) ---
+
+                // Estado 1: Esperando Nome
+                if (this.state === "WAITING_NAME") {
+                    const normalizedName = text.normalize("NFD").replace(/[\u0300-\u036f]/g, '');
+                    const greetings = ["bom dia", "boa tarde", "boa noite", "ola", "olá", "oi", "bonjour", "bonsoir", "salut"];
+                    const isGreetingName = greetings.some(g => normalizedName.includes(g.normalize("NFD").replace(/[\u0300-\u036f]/g, '')));
+
+                    if (isGreetingName) {
+                        const ptMsg = "Que bom falar com você. Para começarmos, por favor, digite ou fale seu nome completo pausadamente para eu compreender.";
+                        const frMsg = "Ravi de vous parler. Pour commencer, écrivez ou dites votre nom complet lentement pour que je le comprenne bien.";
+                        const msg = chooseText(ptMsg, frMsg);
+                        ConversationQueue.enqueue(msg, msg);
+                        return;
+                    }
+
+                    this.userData.nome = raw;
+                    localStorage.setItem('vizo_user_name', raw);
+
+                    const msgPt = `Obrigado ${raw}. Agora, por favor, fale ou digite pausadamente o número do seu telefone (com DDD) para acessar o menu de opções.`;
+                    const msgFr = `Merci ${raw}. Maintenant, parlez ou tapez lentement votre numéro de téléphone (avec indicatif) pour accéder au menu d’options.`;
+                    const msg = chooseText(msgPt, msgFr);
+                    ConversationQueue.enqueue(msg, msg);
+                    this.state = "WAITING_PHONE";
+                    return;
+                }
+
+                // Estado 2: Esperando Telefone
+                if (this.state === "WAITING_PHONE") {
+                    this.userData.whatsapp = text;
+                    localStorage.setItem('vizo_user_phone', text);
+
+                    const okPt = "Perfeito! Tudo pronto para começarmos.";
+                    const okFr = "Parfait ! Tout est prêt pour que nous commencions.";
+                    ConversationQueue.enqueue(chooseText(okPt, okFr), chooseText(okPt, okFr));
+                    const modeMsgPt = "Antes de continuarmos, como você prefere ser atendido?\n\n1️⃣ Somente texto\n2️⃣ Áudio e texto (mais acessível)\n3️⃣ Vídeo, quando disponível\n\nVocê poderá mudar essa preferência depois, se quiser.";
+                    const modeMsgFr = "Avant de continuer, comment préférez‑vous être accueilli(e) ?\n\n1️⃣ Texte uniquement\n2️⃣ Audio et texte (plus accessible)\n3️⃣ Vidéo, lorsque disponible\n\nVous pourrez changer cette préférence plus tard, si vous le souhaitez.";
+                    ConversationQueue.enqueue(
+                        chooseText(modeMsgPt, modeMsgFr),
+                        chooseText(
+                            "Antes de continuarmos, como você prefere ser atendido: somente texto, áudio e texto ou vídeo quando disponível?",
+                            "Avant de continuer, préférez‑vous seulement le texte, audio et texte ou vidéo lorsqu’elle est disponible ?"
+                        )
+                    );
+                    this.state = "CHOOSE_MODE";
+                    return;
+                }
+
+                if (this.state === "CHOOSE_MODE") {
+                    let mode = null;
+                    if (text === "1" || text.includes("texto")) {
+                        mode = "text";
+                    } else if (text === "2" || text.includes("audio") || text.includes("áudio")) {
+                        mode = "audio";
+                    } else if (text === "3" || text.includes("video") || text.includes("vídeo")) {
+                        mode = "video";
+                    }
+
+                    if (!mode) {
+                        const retryMsg = "Não entendi sua preferência. Por favor, escolha:\n1️⃣ Somente texto\n2️⃣ Áudio e texto\n3️⃣ Vídeo, quando disponível.";
+                        ConversationQueue.enqueue(
+                            retryMsg,
+                            "Não entendi sua preferência. Escolha 1 para somente texto, 2 para áudio e texto, ou 3 para vídeo quando disponível."
+                        );
+                        return;
+                    }
+
+                    this.userData.preferredMode = mode;
+                    localStorage.setItem('vizo_pref_mode', mode);
+
+                    let confirmText;
+                    let adminUserFromSession = null;
+                    try {
+                        adminUserFromSession = window.sessionStorage ? window.sessionStorage.getItem('vizô_user') : null;
+                    } catch (e) {
+                        adminUserFromSession = null;
+                    }
+                    const isFourHandsAdmin = (adminUserFromSession || "").toUpperCase() === "FOURHANDS";
+
+                    if (mode === "text") {
+                        confirmText = "Perfeito, vou seguir com respostas em texto. Se quiser ativar o áudio depois, é só avisar que prefere receber em áudio.";
+                    } else if (mode === "audio") {
+                        confirmText = "Perfeito, vou falar com você por áudio e texto. Isso também ajuda na acessibilidade para quem tem dificuldade de leitura.";
+                    } else {
+                        confirmText = "Perfeito, vou seguir com texto e áudio. O atendimento por vídeo está previsto para evoluções futuras do sistema e poderá ser ativado para a FOUR HANDS, se o cliente desejar.";
+                    }
+
+                    ConversationQueue.enqueue(confirmText, confirmText);
+                    if (isFourHandsAdmin) {
+                        const introDemo = "Agora vou me apresentar como solução comercial, mostrando como posso ajudar a FOUR HANDS a encantar pacientes e aumentar conversões de agendamentos. Embora este exemplo esteja configurado para a Pró-Visão Saúde Ocular, o Vizô pode ser adaptado para outras áreas comerciais e empresariais, do atacado ao varejo.";
+                        ConversationQueue.enqueue(introDemo, introDemo);
+                        this.showVizoSalesIntro();
+                    } else if (this.entryContext === 'comercial') {
+                        this.showVizoSalesIntro();
+                    } else {
+                        ConversationQueue.enqueue(
+                            this.getMenuText(),
+                            "Posso agendar sua consulta, explicar sobre nossos exames ou chamar um especialista humano. Por favor, escolha uma opção abaixo ou digite sua dúvida.",
+                            () => { this.state = "MENU"; }
+                        );
+                    }
+                    return;
+                }
+
+                // Guarda de vendas: se o menu principal estiver visível mas o contexto de vendas estiver ativo,
+                // roteia números 01-05 para o menu de vendas em vez do menu clínico.
+                const digitsGuard = text.replace(/\D/g, '');
+                if (this.forceSales && digitsGuard && this.state === "MENU") {
+                    this.state = "VIZO_SALES_OPTIONS";
+                    // Deixa cair para o manipulador específico abaixo
+                }
+
+                if (this.state === "WAITING_EXAM_PHONE") {
+                    this.userData.whatsapp = raw;
+                    ConversationQueue.enqueue("Obrigado! Iniciando a busca...", "Obrigado! Iniciando a busca.");
+                    this.showExamSearchUI();
+                    this.state = "MENU";
+                    return;
+                }
+
+                if (this.state === "VIZO_SALES_BUDGET") {
+                    const norm = text.normalize("NFD").replace(/[\u0300-\u036f]/g, '');
+                    if (text === "1" || norm.includes("sim")) {
+                        this.salesForm = {};
+                        this.salesFormStep = 1;
+                        const msg = "Perfeito, vou considerar seu interesse comercial registrado para uma condição personalizada.\n\nVou te fazer algumas perguntas rápidas para montar o protótipo.\nQual o nome da clínica ou empresa?\n\n0️⃣ Falar com comercial agora\n9️⃣ Voltar ao menu";
+                        ConversationQueue.enqueue(msg, msg);
+                        this.state = "VIZO_SALES_PROSPECT";
+                    } else if (text === "2" || norm.includes("nao quero") || norm.includes("não quero") || norm.includes("conhecer mais")) {
+                        const msg = "Perfeito, sem problemas. Vamos continuar conhecendo melhor o Vizô.\n\nEscolha um tópico:\n01️⃣ Voz\n02️⃣ Vídeo\n03️⃣ Integrações\n04️⃣ Investimentos\n05️⃣ Vizô na Prática\n06️⃣ Voltar ao menu\n07️⃣ Reativação de Pacientes";
+                        ConversationQueue.enqueue(msg, msg);
+                        this.state = "VIZO_SALES_OPTIONS";
+                    } else {
+                        const msg = "Só para confirmar: escolha uma das opções abaixo:\n1️⃣ Sim, quero que o time comercial prepare uma condição para mim.\n2️⃣ Não quero agora, quero conhecer mais o Vizô antes.";
+                        const voice = "Escolha 1 se você quer que o time comercial prepare uma condição para você, ou 2 se não quer agora e prefere conhecer mais o Vizô antes.";
+                        ConversationQueue.enqueue(msg, voice);
+                    }
+                    return;
+                }
+
+                if (this.state === "VIZO_SALES_REACT_MESSAGE") {
+                    const content = raw;
+                    if (text.replace(/\D/g, '') === "9") {
+                        this.forceSales = true;
+                        this.showVizoSalesIntro();
+                        return;
+                    }
+                    if (!content || content.length < 8) {
+                        const retryMsg = "Por favor, envie o texto da mensagem de reativação que você quer usar. Exemplo: \"Olá, aqui é o Vizô da Pró-Visão...\".\n\n9️⃣ Voltar ao menu";
+                        ConversationQueue.enqueue(retryMsg, retryMsg);
+                        return;
+                    }
+                    this.reactivationDemoMessage = content;
+                    const askPhone = "Perfeito. Agora me envie o número de WhatsApp com DDD para o qual você quer enviar essa mensagem de demonstração. Exemplo: 96981234567.\n\n9️⃣ Voltar ao menu";
+                    ConversationQueue.enqueue(askPhone, askPhone);
+                    this.state = "VIZO_SALES_REACT_PHONE";
+                    return;
+                }
+
+                if (this.state === "VIZO_SALES_REACT_TEMPLATE_SELECT") {
+                    const sel = text.replace(/\D/g, '');
+                    if (sel === "9") {
+                        this.forceSales = true;
+                        this.showVizoSalesIntro();
+                        return;
+                    }
+                    if (sel === "1" || sel === "2" || sel === "3" || sel === "4") {
+                        const templates = {
+                            "1": "Olá {{nome}}, aqui é o Vizô da Pró-Visão. Notamos que já faz cerca de 1 ano desde sua última avaliação. Que tal um check-up de visão? Posso te ajudar a reservar um horário no período da {{periodo}}. Se preferir, agende pelo link: {{link}}.",
+                            "2": "Olá {{nome}}, aqui é o Vizô da Pró-Visão. Estamos acompanhando seu pós-operatório de {{especialidade}}. Uma revisão rápida ajuda a garantir que está tudo evoluindo bem. Prefere manhã ou tarde? Posso agendar para você ou, se preferir, use: {{link}}.",
+                            "3": "Olá {{nome}}, aqui é o Vizô da Pró-Visão. O acompanhamento de {{especialidade}} é essencial para manter sua visão protegida. Podemos reservar um retorno? Se quiser, você também pode usar: {{link}}.",
+                            "4": null
+                        };
+                        if (sel === "4") {
+                            const msg = "Digite a mensagem de reativação que você deseja enviar pelo WhatsApp (exatamente como será enviada).\n\n9️⃣ Voltar ao menu";
+                            ConversationQueue.enqueue(msg, msg);
+                            this.state = "VIZO_SALES_REACT_MESSAGE";
+                            return;
+                        }
+                        this.reactivationDemoMessageTemplate = templates[sel];
+                        const needed = [];
+                        const re = /\{\{(.*?)\}\}/g;
+                        let m;
+                        while ((m = re.exec(this.reactivationDemoMessageTemplate)) !== null) {
+                            const k = m[1].trim();
+                            if (needed.indexOf(k) === -1) needed.push(k);
+                        }
+                        this.reactivationVarsNeeded = needed;
+                        this.reactivationVars = {};
+                        this.reactivationVarIndex = 0;
+                        if (!needed.length) {
+                            this.reactivationDemoMessage = this.reactivationDemoMessageTemplate;
+                            const askPhone = "Perfeito. Agora me envie o número de WhatsApp com DDD para o qual você quer enviar essa mensagem de demonstração. Exemplo: 96981234567.";
+                            ConversationQueue.enqueue(askPhone, askPhone);
+                            this.state = "VIZO_SALES_REACT_PHONE";
+                            return;
+                        }
+                        const prompts = {
+                            "nome": "Qual nome devo usar na mensagem? (padrão: Paciente)",
+                            "especialidade": "Qual especialidade devo mencionar? (padrão: oftalmologia)",
+                            "link": "Qual link de agendamento devo incluir? (padrão: www.qdsynapse.com.br)",
+                            "periodo": "Qual período devo sugerir? (padrão: manhã)"
+                        };
+                        const varName = this.reactivationVarsNeeded[this.reactivationVarIndex];
+                        const question = prompts[varName] || ("Informe o valor para \"" + varName + "\" (pressione Enter para usar padrão).");
+                        ConversationQueue.enqueue(question, question);
+                        this.state = "VIZO_SALES_REACT_FILL_VAR";
+                        return;
+                    } else {
+                        const msg = "Escolha uma opção:\n1️⃣ Check-up anual\n2️⃣ Pós-operatório\n3️⃣ Condições crônicas\n4️⃣ Escrever minha mensagem\n9️⃣ Voltar ao menu";
+                        ConversationQueue.enqueue(msg, msg);
+                        return;
+                    }
+                }
+
+                if (this.state === "VIZO_SALES_REACT_FILL_VAR") {
+                    const defaults = {
+                        nome: "Paciente",
+                        especialidade: "oftalmologia",
+                        link: "https://www.qdsynapse.com.br",
+                        periodo: "manhã"
+                    };
+                    const varName = this.reactivationVarsNeeded[this.reactivationVarIndex];
+                    if (text.replace(/\D/g, '') === "9") {
+                        this.forceSales = true;
+                        this.showVizoSalesIntro();
+                        return;
+                    }
+                    let value = raw && raw.length ? raw.trim() : (defaults[varName] || "");
+                    if (varName === "link") {
+                        const norm = (value || "").trim().toLowerCase();
+                        if (!value) {
+                            value = defaults.link;
+                        } else if (norm === "qdsynapse" || norm === "www.qdsynapse.com.br") {
+                            value = "https://www.qdsynapse.com.br";
+                        }
+                    }
+                    this.reactivationVars[varName] = value;
+                    this.reactivationVarIndex += 1;
+                    if (this.reactivationVarIndex < this.reactivationVarsNeeded.length) {
+                        const prompts = {
+                            "nome": "Qual nome devo usar na mensagem? (padrão: Paciente)",
+                            "especialidade": "Qual especialidade devo mencionar? (padrão: oftalmologia)",
+                            "link": "Qual link de agendamento devo incluir? (padrão: www.qdsynapse.com.br)",
+                            "periodo": "Qual período devo sugerir? (padrão: manhã)"
+                        };
+                        const nextVar = this.reactivationVarsNeeded[this.reactivationVarIndex];
+                        const question = (prompts[nextVar] || ("Informe o valor para \"" + nextVar + "\" (pressione Enter para usar padrão).")) + "\n\n9️⃣ Voltar ao menu";
+                        ConversationQueue.enqueue(question, question);
+                        return;
+                    }
+                    let compiled = this.reactivationDemoMessageTemplate;
+                    Object.keys(this.reactivationVars).forEach(k => {
+                        const val = this.reactivationVars[k];
+                        compiled = compiled.replace(new RegExp("\\{\\{\\s*" + k + "\\s*\\}\\}", "g"), val);
+                    });
+                    this.reactivationDemoMessage = compiled;
+                    const askPhone = "Perfeito. Agora me envie o número de WhatsApp com DDD para o qual você quer enviar essa mensagem de demonstração. Exemplo: 96981234567.\n\n9️⃣ Voltar ao menu";
+                    ConversationQueue.enqueue(askPhone, askPhone);
+                    this.state = "VIZO_SALES_REACT_PHONE";
+                    return;
+                }
+
+                if (this.state === "VIZO_SALES_REACT_PHONE") {
+                    const digits = text.replace(/\D/g, '');
+                    if (digits === "9") {
+                        this.forceSales = true;
+                        this.showVizoSalesIntro();
+                        return;
+                    }
+                    if (!digits || digits.length < 10) {
+                        const retryMsg = "Não consegui identificar um número válido. Por favor, envie o WhatsApp com DDD apenas com números, por exemplo: 96981234567.\n\n9️⃣ Voltar ao menu";
+                        ConversationQueue.enqueue(retryMsg, retryMsg);
+                        return;
+                    }
+                    const normalized = digits.replace(/^0+/, '');
+                    const fullNumber = "+55" + normalized;
+                    const fallback = "Olá, aqui é o Vizô, assistente virtual da Pró-Visão Saúde Ocular Macapá. Estamos revisando nossa lista de pacientes para garantir que ninguém fique sem cuidar bem da visão. Notamos que faz um tempo desde a sua última consulta e gostaríamos de te oferecer um horário especial de retorno para check-up. Responda a esta mensagem dizendo se prefere período da manhã ou da tarde, que eu te ajudo a organizar o melhor horário para você.";
+                    const msgToSend = (this.reactivationDemoMessage && this.reactivationDemoMessage.trim()) ? this.reactivationDemoMessage : fallback;
+                    const waUrl = "https://wa.me/55" + normalized + "?text=" + encodeURIComponent(msgToSend);
+                    try {
+                        window.open(waUrl, "_blank");
+                    } catch (e) {
+                    }
+                    const confirmMsg = "Perfeito, vou usar " + fullNumber + " como exemplo para a demonstração.\n\nMensagem de reativação preparada:\n\n\"" + msgToSend + "\"\n\nNa prática, a clínica pode acionar esse envio de forma automática ou pela equipe humana, usando exatamente o número informado.\n\n9️⃣ Voltar ao menu";
+                    ConversationQueue.enqueue(confirmMsg, confirmMsg);
+                    const askReminder = "Deseja programar um lembrete para reativar novamente após um período?\n1️⃣ Sim\n2️⃣ Não\n9️⃣ Voltar ao menu";
+                    ConversationQueue.enqueue(askReminder, askReminder);
+                    this.reactivationDemoMessage = "";
+                    this.state = "VIZO_SALES_REACT_REMINDER_ASK";
+                    return;
+                }
+
+                if (this.state === "VIZO_SALES_REACT_REMINDER_ASK") {
+                    const d = text.replace(/\D/g, '');
+                    if (d === "9") {
+                        this.forceSales = true;
+                        this.showVizoSalesIntro();
+                        return;
+                    }
+                    if (d === "1") {
+                        const askDays = "Quantos dias devo aguardar antes de lembrar você novamente? (número de dias)\nPara demonstração, vou converter para alguns segundos.\n\n9️⃣ Voltar ao menu";
+                        ConversationQueue.enqueue(askDays, askDays);
+                        this.state = "VIZO_SALES_REACT_REMINDER_DAYS";
+                        return;
+                    } else if (d === "2") {
+                        const msg = "Certo. Se quiser, digite um número entre 01 e 07 para explorar outro recurso comercial.";
+                        ConversationQueue.enqueue(msg, msg);
+                        this.state = "VIZO_SALES_OPTIONS";
+                        return;
+                    } else {
+                        const retry = "Escolha 1 para programar um lembrete, 2 para não programar ou 9 para voltar ao menu.";
+                        ConversationQueue.enqueue(retry, retry);
+                        return;
+                    }
+                }
+
+                if (this.state === "VIZO_SALES_REACT_REMINDER_DAYS") {
+                    const digits = text.replace(/\D/g, '');
+                    if (digits === "9") {
+                        this.forceSales = true;
+                        this.showVizoSalesIntro();
+                        return;
+                    }
+                    const daysNum = parseInt(digits, 10);
+                    const valid = !isNaN(daysNum) && daysNum > 0;
+                    const days = valid ? daysNum : 7;
+                    const demoMs = 5000;
+                    ConversationQueue.enqueue("Lembrete programado. Para demonstração, vou avisar aqui no chat em alguns segundos.", "Lembrete programado. Para demonstração, vou avisar aqui no chat em alguns segundos.");
+                    setTimeout(() => {
+                        ConversationQueue.enqueue("Lembrete: reativar pacientes conforme a campanha definida. Período configurado: " + days + " dias.", "Lembrete: reativar pacientes conforme a campanha definida. Período configurado: " + days + " dias.");
+                    }, demoMs);
+                    this.state = "VIZO_SALES_OPTIONS";
+                    return;
+                }
+
+                if (this.state === "VIZO_PRACTICE_NAME_PHONE") {
+                    if (!this.practiceDemo) this.practiceDemo = { identity: "", need: "", service: "", datetime: "" };
+                    this.practiceDemo.identity = raw.trim();
+                    const msg = "Agora, para representar a necessidade desse paciente, digite aqui no chat o que ele está buscando (por exemplo: exame específico, cirurgia, retorno, lentes de contato, etc.). Use uma frase curta, como se fosse a fala do paciente.";
+                    ConversationQueue.enqueue(msg, msg);
+                    this.state = "VIZO_PRACTICE_NEED";
+                    return;
+                }
+
+                if (this.state === "VIZO_PRACTICE_NEED") {
+                    if (!this.practiceDemo) this.practiceDemo = { identity: "", need: "", service: "", datetime: "" };
+                    this.practiceDemo.need = raw.trim();
+                    const msg = "Em seguida, informe qual serviço ou tipo de consulta o Vizô deve oferecer para esse paciente. Você pode incluir também o nome do médico ou da especialidade, se fizer sentido para o seu exemplo.";
+                    ConversationQueue.enqueue(msg, msg);
+                    this.state = "VIZO_PRACTICE_SERVICE";
+                    return;
+                }
+
+                if (this.state === "VIZO_PRACTICE_SERVICE") {
+                    if (!this.practiceDemo) this.practiceDemo = { identity: "", need: "", service: "", datetime: "" };
+                    this.practiceDemo.service = raw.trim();
+                    const msg = "Agora escolha uma data e um horário de preferência para esse atendimento e digite aqui (por exemplo: 20/03 às 15h). Vou considerar essa informação como se o Vizô estivesse combinando o agendamento com o paciente.";
+                    ConversationQueue.enqueue(msg, msg);
+                    this.state = "VIZO_PRACTICE_DATETIME";
+                    return;
+                }
+
+                if (this.state === "VIZO_PRACTICE_DATETIME") {
+                    if (!this.practiceDemo) this.practiceDemo = { identity: "", need: "", service: "", datetime: "" };
+                    this.practiceDemo.datetime = raw.trim();
+                    const d = this.practiceDemo || {};
+                    const line1 = d.identity ? "- Paciente e contato: " + d.identity : "- Paciente e contato: (não preenchido nesta demonstração)";
+                    const line2 = d.need ? "- Necessidade: " + d.need : "- Necessidade: (não preenchida nesta demonstração)";
+                    const line3 = d.service ? "- Serviço/profissional: " + d.service : "- Serviço/profissional: (não preenchido nesta demonstração)";
+                    const line4 = d.datetime ? "- Data e horário sugeridos: " + d.datetime : "- Data e horário sugeridos: (não preenchidos nesta demonstração)";
+                    const summary = "Perfeito. Com base no que você digitou, o Vizô conduziria assim:\n\n" + line1 + "\n" + line2 + "\n" + line3 + "\n" + line4 + "\n\nCom esses dados, o Vizô registraria o pré-agendamento no painel Vizô Analytics, além de integrar com o Google Calendar (agenda da clínica) e poder ser integrado ao ERP via API ou planilha, conforme o sistema da clínica.\n\nDigite 01 a 04 para explorar outro tópico comercial ou 06 para voltar ao menu inicial.";
+                    ConversationQueue.enqueue(summary, summary);
+                    this.practiceDemo = null;
+                    this.state = "VIZO_SALES_OPTIONS";
+                    this.forceSales = true;
+                    return;
+                }
+
+                if (this.state === "VIZO_SALES_OPTIONS") {
+                    const digitsOnly = text.replace(/\D/g, '');
+                    const choice = digitsOnly ? parseInt(digitsOnly, 10) : NaN;
+                    if (choice === 1) {
+                        const msg = "O atendimento por voz transforma o seu WhatsApp em uma central inteligente. O paciente fala como se estivesse conversando com a recepção e eu, Vizô, fico com o trabalho pesado: organizo o fluxo, respondo dúvidas frequentes e preparo o agendamento. Isso reduz filas, acelera o atendimento e passa uma sensação de cuidado humano, mesmo sendo digital. No plano Premium, você pode inclusive clonar a própria voz da clínica ou inserir vozes humanas personalizadas para tornar o atendimento ainda mais próximo do paciente.\n\n1️⃣ Ver cenário real de uso\n2️⃣ Voltar ao menu";
+                        ConversationQueue.enqueue(msg, msg);
+                        this.state = "VIZO_SALES";
+                        return;
+                    } else if (choice === 2) {
+                        const msg = "A triagem por vídeo é pensada para valorizar o tempo da equipe médica. O paciente pode mostrar o olho e alguns sinais visíveis, e eu ajudo a organizar essas informações de forma estruturada. Isso não substitui o exame, mas ajuda a priorizar quem precisa ser atendido com mais urgência e a preparar o médico antes da consulta.\n\nVocê quer focar em qual ponto agora?\n1️⃣ Experiência do paciente\n2️⃣ Produtividade da equipe\n3️⃣ Voltar ao menu";
+                        ConversationQueue.enqueue(msg, msg);
+                        this.state = "VIZO_SALES_TRIAGEM";
+                        return;
+                    } else if (choice === 3) {
+                        const msg = "As integrações são o que faz o Vizô trabalhar junto com o que você já usa hoje. Eu posso enviar automaticamente leads e agendamentos para o ERP ou prontuário, reduzir digitação manual e garantir que nenhuma oportunidade se perca no caminho. Isso significa menos retrabalho, menos erro e mais organização nos dados da clínica.\n\nMe conte com qual área você quer integrar agora:\n1️⃣ Agendamento\n2️⃣ Prontuário\n3️⃣ Financeiro\n4️⃣ Voltar ao menu";
+                        ConversationQueue.enqueue(msg, msg);
+                        this.state = "VIZO_SALES_INTEGRACOES";
+                        return;
+                    } else if (choice === 4) {
+                        const msg = "Hoje não trabalhamos com tabela de preços fixa no chat. Todo projeto com o Vizô é tratado como Sob Consulta (Projeto Personalizado). Isso significa que avaliamos o tamanho da clínica, a quantidade de canais, o volume de atendimentos e o nível de integração desejado para montar uma proposta sob medida, sempre buscando retorno e não apenas custo.\n\n1️⃣ Registrar interesse para proposta personalizada\n2️⃣ Voltar";
+                        const voice = "Hoje não trabalhamos com tabela de preços fixa no chat. Todo projeto com o Vizô é tratado como sob consulta. Responda 1 para registrar interesse e 2 para voltar.";
+                        ConversationQueue.enqueue(msg, voice);
+                        this.state = "VIZO_SALES_BUDGET";
+                        return;
+                    } else if (choice === 5) {
+                        const scenarios = this.salesDemoScenarios || [];
+                        if (!scenarios.length) {
+                            this.salesDemoIndex = 0;
+                            const fallbackMsg = "No modo demonstração, posso simular um atendimento completo, mas no momento não há cenários configurados.";
+                            ConversationQueue.enqueue(fallbackMsg, fallbackMsg);
+                            this.state = "VIZO_SALES_OPTIONS";
+                            return;
+                        }
+                        const msg1 = "Vamos ver o Vizô na prática. A seguir, vou simular um atendimento completo de um paciente na Pró-Visão Saúde Ocular Macapá, do primeiro contato até o agendamento e registro dos dados, como se fosse um fluxo real.";
+                        const msg2 = "Agora vamos personalizar a simulação com um paciente real da sua clínica.\n\nPor favor, digite aqui no chat o nome completo do paciente que você quer usar como exemplo e, em seguida, o WhatsApp com DDD. Com esses dois dados, eu sigo mostrando como o Vizô conduz o atendimento até o agendamento.";
+                        this.practiceDemo = { identity: "", need: "", service: "", datetime: "" };
+                        ConversationQueue.enqueue(msg1, msg1);
+                        ConversationQueue.enqueue(msg2, msg2);
+                        this.state = "VIZO_PRACTICE_NAME_PHONE";
+                        return;
+                    } else if (choice === 6) {
+                        this.forceSales = true;
+                        this.showVizoSalesIntro();
+                        return;
+                    } else if (choice === 7) {
+                        const msg = "Reativação de Pacientes é quando eu, Vizô, ajudo a trazer de volta quem sumiu da agenda: pacientes que não fazem check-up há mais de 1 ano, pós-operatório que não voltou para controle ou pessoas que pediram orçamento e não concluíram o agendamento.\n\nEscolha um modelo de mensagem ou escreva a sua:\n1️⃣ Check-up anual\n2️⃣ Pós-operatório\n3️⃣ Condições crônicas\n4️⃣ Escrever minha mensagem\n9️⃣ Voltar ao menu";
+                        ConversationQueue.enqueue(msg, msg);
+                        this.state = "VIZO_SALES_REACT_TEMPLATE_SELECT";
+                        return;
+                    } else {
+                        ConversationQueue.enqueue("Escolha um número entre 01 e 07.", "Escolha um número entre 01 e 07.");
+                        return;
+                    }
+                }
+
+                if (this.state === "VIZO_SALES_PROSPECT") {
+                    const digitsOnly = text.replace(/\D/g, '');
+                    if (digitsOnly === "9") {
+                        // Volta para o menu comercial
+                        this.forceSales = true;
+                        this.showVizoSalesIntro();
+                        return;
+                    }
+                    if (digitsOnly === "0") {
+                        const link = "https://wa.me/5596991512552?text=Ol%C3%A1%2C%20vim%20pelo%20Viz%C3%B4%20e%20quero%20falar%20com%20o%20comercial.";
+                        const msg = "Transferindo para o atendimento comercial:\n👉 <a href='" + link + "' target='_blank' style='color: #128c7e; font-weight: bold; text-decoration: none;'>Falar com Comercial no WhatsApp (96 99151-2552)</a>";
+                        ConversationQueue.enqueue(msg, "Transferindo para o atendimento comercial.");
+                        // Após transferir, mantém modo vendas ativo e retorna ao menu comercial
+                        this.forceSales = true;
+                        this.showVizoSalesIntro();
+                        return;
+                    }
+                    if (this.salesFormStep === 1) {
+                        this.salesForm.company_name = text.trim();
+                        this.salesFormStep = 2;
+                        ConversationQueue.enqueue("Qual o CNPJ?", "Qual o CNPJ?");
+                        return;
+                    } else if (this.salesFormStep === 2) {
+                        this.salesForm.cnpj = text.trim();
+                        this.salesFormStep = 3;
+                        ConversationQueue.enqueue("Nome do responsável pelo projeto?", "Nome do responsável pelo projeto?");
+                        return;
+                    } else if (this.salesFormStep === 3) {
+                        this.salesForm.contact_name = text.trim();
+                        this.salesFormStep = 4;
+                        ConversationQueue.enqueue("E-mail para contato?", "E-mail para contato?");
+                        return;
+                    } else if (this.salesFormStep === 4) {
+                        this.salesForm.email = text.trim();
+                        this.salesFormStep = 5;
+                        ConversationQueue.enqueue("WhatsApp para contato?", "WhatsApp para contato?");
+                        return;
+                    } else if (this.salesFormStep === 5) {
+                        this.salesForm.phone = text.trim();
+                        this.salesFormStep = 6;
+                        ConversationQueue.enqueue("Quais usos você imagina para o chat? (ex: agendamento, dúvidas, pós-consulta, campanhas)", "Quais usos você imagina para o chat?");
+                        return;
+                    } else if (this.salesFormStep === 6) {
+                        this.salesForm.chat_uses = text.trim();
+                        this.salesFormStep = 7;
+                        ConversationQueue.enqueue("Quais canais deseja usar? (WhatsApp, Web, Instagram)", "Quais canais deseja usar?");
+                        return;
+                    } else if (this.salesFormStep === 7) {
+                        this.salesForm.channels = text.trim();
+                        this.salesFormStep = 8;
+                        ConversationQueue.enqueue("Integrações desejadas? (Agendamento, Prontuário, Financeiro)", "Integrações desejadas?");
+                        return;
+                    } else if (this.salesFormStep === 8) {
+                        this.salesForm.integrations = text.trim();
+                        const payload = {
+                            company_name: this.salesForm.company_name || "",
+                            cnpj: this.salesForm.cnpj || "",
+                            contact_name: this.salesForm.contact_name || "",
+                            email: this.salesForm.email || "",
+                            phone: this.salesForm.phone || "",
+                            chat_uses: this.salesForm.chat_uses || "",
+                            channels: this.salesForm.channels || "",
+                            integrations: this.salesForm.integrations || "",
+                            source: (this.sourceData && this.sourceData.source) ? this.sourceData.source : "chat_vizo"
+                        };
+                        fetch('/api/sales_lead', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        }).then(() => {
+                            const link = "https://wa.me/5596991512552?text=Ol%C3%A1%2C%20vim%20pelo%20Viz%C3%B4%20e%20quero%20falar%20com%20o%20comercial.";
+                            const msg = "Dados recebidos e registrados. Em breve nossa equipe entrará em contato com uma proposta personalizada.\n\nSe preferir atendimento agora:\n👉 <a href='" + link + "' target='_blank' style='color: #128c7e; font-weight: bold; text-decoration: none;'>Falar com Comercial no WhatsApp (96 99151-2552)</a>\n\n9️⃣ Voltar ao menu";
+                            ConversationQueue.enqueue(msg, "Dados registrados. Em breve nossa equipe entrará em contato.");
+                            this.reset();
+                        }).catch(() => {
+                            ConversationQueue.enqueue("Tivemos um problema ao registrar os dados. Tente novamente mais tarde ou fale com o comercial no WhatsApp 96 99151-2552.", "Tivemos um problema ao registrar os dados.");
+                            this.reset();
+                        });
+                        return;
+                    }
+                    return;
+                }
+
+                if (this.state === "VIZO_SALES_TRIAGEM") {
+                    const digitsOnly = text.replace(/\D/g, '');
+                    if (digitsOnly === "1") {
+                        const msg = "Quando focamos em experiência do paciente, a triagem por vídeo funciona como um acolhimento visual. O paciente sente que está sendo realmente visto, consegue mostrar o que está incomodando e recebe orientações claras em poucos passos. Isso reduz ansiedade, passa sensação de cuidado personalizado e aumenta a confiança na clínica. Além disso, você pode usar esse canal para pós-consulta, retornos simples e acompanhamento da jornada, mantendo o paciente perto da marca sem precisar lotar a agenda do médico.\n\n3️⃣ Voltar ao menu";
+                        ConversationQueue.enqueue(msg, msg);
+                        return;
+                    } else if (digitsOnly === "2") {
+                        const msg = "Quando o foco é produtividade da equipe, a triagem por vídeo ajuda a filtrar casos antes de chegar ao médico. Eu organizo as informações em formato estruturado, priorizo sinais de urgência e reduzo o volume de atendimentos desnecessários na agenda. Isso libera tempo da equipe, diminui retrabalho na recepção e permite que os profissionais se concentrem nos casos que realmente exigem avaliação presencial. Na prática, você atende melhor, em menos tempo e com menos desgaste operacional.\n\n3️⃣ Voltar ao menu";
+                        ConversationQueue.enqueue(msg, msg);
+                        return;
+                    } else if (digitsOnly === "3") {
+                        // Voltar ao menu comercial
+                        this.forceSales = true;
+                        this.showVizoSalesIntro();
+                        return;
+                    } else {
+                        const msg = "Escolha uma opção válida:\n1️⃣ Experiência do paciente\n2️⃣ Produtividade da equipe\n3️⃣ Voltar ao menu";
+                        ConversationQueue.enqueue(msg, msg);
+                        return;
+                    }
+                }
+
+                if (this.state === "VIZO_SALES_INTEGRACOES") {
+                    const digitsOnly = text.replace(/\D/g, '');
+                    if (digitsOnly === "1") {
+                        const msg = "Integração com Agendamento:\n- Envio automático de leads e pré-agendamentos para sua agenda (Google Calendar, ERP ou sistema próprio via API)\n- Confirmações e lembretes automatizados por WhatsApp\n- Redução de digitação manual e erros\n\n4️⃣ Voltar ao menu";
+                        ConversationQueue.enqueue(msg, msg);
+                        return;
+                    } else if (digitsOnly === "2") {
+                        const msg = "Integração com Prontuário:\n- Criação de ficha básica do paciente a partir dos dados coletados no chat\n- Anexos e observações estruturadas para facilitar o atendimento\n- Possibilidade de sincronização via webhooks ou API do seu sistema\n\n4️⃣ Voltar ao menu";
+                        ConversationQueue.enqueue(msg, msg);
+                        return;
+                    } else if (digitsOnly === "3") {
+                        const msg = "Integração com Financeiro:\n- Geração de sinalizações para cobrança e conciliação\n- Disparo de links de pagamento quando aplicável\n- Exportação de dados para relatórios de conversão e receita\n\n4️⃣ Voltar ao menu";
+                        ConversationQueue.enqueue(msg, msg);
+                        return;
+                    } else if (digitsOnly === "4") {
+                        // Voltar ao menu comercial
+                        this.forceSales = true;
+                        this.showVizoSalesIntro();
+                        return;
+                    } else {
+                        const msg = "Escolha uma opção:\n1️⃣ Agendamento\n2️⃣ Prontuário\n3️⃣ Financeiro\n4️⃣ Voltar ao menu";
+                        ConversationQueue.enqueue(msg, msg);
+                        return;
+                    }
+                }
+
+                // --- FLUXO DE VENDAS (Exclusivo) ---
+                if (this.state === "VIZO_SALES") {
+                    const norm = text.normalize("NFD").replace(/[\u0300-\u036f]/g, '');
+                    const digitsOnly = text.replace(/\D/g, '');
+
+                    if (digitsOnly === "1") {
+                        const msg = "Vou te dar um cenário real de uso: imagine uma campanha de exames de rotina. O paciente clica em um link no WhatsApp, é recebido por mim e, em poucos passos, informa nome, telefone e interesse. Eu respondo as dúvidas principais, ofereço horários sugeridos e já deixo tudo organizado para a equipe confirmar o agendamento. No painel Vizô Analytics, vocês enxergam quantas pessoas entraram, quantas avançaram e quantas viraram consulta marcada. Assim, a clínica mede na prática o resultado da campanha e pode ajustar a estratégia com dados, não só com feeling. Se quiser, pode digitar menu para voltar ao menu inicial.";
+                        ConversationQueue.enqueue(msg, msg);
+                    }
+                    else if (digitsOnly === "2") {
+                        this.forceSales = true;
+                        this.showVizoSalesIntro();
+                    }
+                    else if (digitsOnly === "3") {
+                        this.forceSales = true;
+                        this.showVizoSalesIntro();
+                    }
+                    else if (norm.includes("voz") || norm.includes("falar")) {
+                        const msg = "O atendimento por voz transforma o seu WhatsApp em uma central inteligente. O paciente fala como se estivesse conversando com a recepção e eu, Vizô, fico com o trabalho pesado: organizo o fluxo, respondo dúvidas frequentes e preparo o agendamento. Isso reduz filas, acelera o atendimento e passa uma sensação de cuidado humano, mesmo sendo digital. No plano Premium, você pode inclusive clonar a própria voz da clínica ou inserir vozes humanas personalizadas para tornar o atendimento ainda mais próximo do paciente.\n\nEscolha uma opção:\n1️⃣ Ver um cenário real de uso\n2️⃣ Voltar ao menu\n\nSe preferir, pode digitar menu para voltar ao menu inicial.";
+                        ConversationQueue.enqueue(msg, msg);
+                    }
+                    else if (norm.includes("cenario") || norm.includes("exemplo")) {
+                        const msg = "Vou te dar um cenário real de uso: imagine uma campanha de exames de rotina. O paciente clica em um link no WhatsApp, é recebido por mim e, em poucos passos, informa nome, telefone e interesse. Eu respondo as dúvidas principais, ofereço horários sugeridos e já deixo tudo organizado para a equipe confirmar o agendamento. No painel Vizô Analytics, vocês enxergam quantas pessoas entraram, quantas avançaram e quantas viraram consulta marcada. Assim, a clínica mede na prática o resultado da campanha e pode ajustar a estratégia com dados, não só com feeling. Se quiser, pode digitar menu para voltar ao menu inicial.";
+                        ConversationQueue.enqueue(msg, msg);
+                    }
+                    else if (norm.includes("video") || norm.includes("imagem") || norm.includes("ver")) {
+                        const msg = "A triagem por vídeo é pensada para valorizar o tempo da equipe médica. O paciente pode mostrar o olho e alguns sinais visíveis, e eu ajudo a organizar essas informações de forma estruturada. Isso não substitui o exame, mas ajuda a priorizar quem precisa ser atendido com mais urgência e a preparar o médico antes da consulta.\n\nVocê quer focar em qual ponto agora?\n1️⃣ Experiência do paciente\n2️⃣ Produtividade da equipe\n3️⃣ Voltar ao menu";
+                        ConversationQueue.enqueue(msg, msg);
+                        this.state = "VIZO_SALES_TRIAGEM";
+                    }
+                    else if (norm.includes("experiencia") || norm.includes("experiência do paciente") || (norm.includes("experiencia") && norm.includes("paciente"))) {
+                        const msg = "Quando focamos em experiência do paciente, a triagem por vídeo funciona como um acolhimento visual. O paciente sente que está sendo realmente visto, consegue mostrar o que está incomodando e recebe orientações claras em poucos passos. Isso reduz ansiedade, passa sensação de cuidado personalizado e aumenta a confiança na clínica. Além disso, você pode usar esse canal para pós-consulta, retornos simples e acompanhamento da jornada, mantendo o paciente perto da marca sem precisar lotar a agenda do médico.\n\n3️⃣ Voltar ao menu";
+                        ConversationQueue.enqueue(msg, msg);
+                    }
+                    else if (norm.includes("produtividade") || (norm.includes("produtividade") && norm.includes("equipe")) || norm.includes("foco na equipe")) {
+                        const msg = "Quando o foco é produtividade da equipe, a triagem por vídeo ajuda a filtrar casos antes de chegar ao médico. Eu organizo as informações em formato estruturado, priorizo sinais de urgência e reduzo o volume de atendimentos desnecessários na agenda. Isso libera tempo da equipe, diminui retrabalho na recepção e permite que os profissionais se concentrem nos casos que realmente exigem avaliação presencial. Na prática, você atende melhor, em menos tempo e com menos desgaste operacional.\n\n3️⃣ Voltar ao menu";
+                        ConversationQueue.enqueue(msg, msg);
+                    }
+                    else if (norm.includes("integra") || norm.includes("sistema") || norm.includes("erp")) {
+                        const msg = "As integrações são o que faz o Vizô trabalhar junto com o que você já usa hoje. Eu posso enviar automaticamente leads e agendamentos para o ERP ou prontuário, reduzir digitação manual e garantir que nenhuma oportunidade se perca no caminho. Isso significa menos retrabalho, menos erro e mais organização nos dados da clínica.\n\nMe conte com qual área você quer integrar agora:\n1️⃣ Agendamento\n2️⃣ Prontuário\n3️⃣ Financeiro\n4️⃣ Voltar ao menu\n\nTodas essas integrações são possíveis em projetos de produção; neste momento, o Vizô está em modo operador básico para testes da FOUR HANDS, mas já preparado para evoluir para integrações completas quando o cliente desejar.";
+                        ConversationQueue.enqueue(msg, msg);
+                        this.state = "VIZO_SALES_INTEGRACOES";
+                    }
+                    else if (norm.includes("futuro") || norm.includes("futur") || norm.includes("potencial") || norm.includes("funcionalidade") || norm.includes("novidade")) {
+                        const msg = "🚀 *Roadmap de Evolução (IA Generativa)*\n\nMeu núcleo de IA está em constante aprendizado (Machine Learning). Em breve terei:\n\n- **Modelos Preditivos:** Análise de histórico para prever No-Show com 85% de precisão.\n- **Multilinguagem:** Atendimento nativo em inglês e francês (fronteira).\n- **Análise de Sentimento:** Priorização automática de pacientes insatisfeitos ou urgentes.\n\nPosso ajudar com mais alguma dúvida técnica ou voltamos ao menu?";
+                        ConversationQueue.enqueue(msg, msg.replace(/\*/g, '').replace(/\n/g, ' '));
+                    }
+                    else if (norm.includes("seguranca") || norm.includes("lgpd") || norm.includes("dados")) {
+                        const msg = "🔒 *Segurança e Compliance*\n\nTodos os dados são criptografados ponta-a-ponta (E2EE). Sigo rigorosamente a LGPD, com:\n- Anonimização de dados sensíveis após o período de retenção.\n- Servidores seguros com certificação ISO 27001.\n- Consentimento explícito e granular para cada interação.\n\nMais alguma dúvida sobre minha arquitetura?";
+                        ConversationQueue.enqueue(msg, msg.replace(/\*/g, '').replace(/\n/g, ' '));
+                    }
+                    else if (norm.includes("custo") || norm.includes("preco") || norm.includes("valor") || norm.includes("orcamento") || norm.includes("plano") || norm.includes("quanto")) {
+                        const msg = "Hoje não trabalhamos com tabela de preços fixa no chat. Todo projeto com o Vizô é tratado como Sob Consulta (Projeto Personalizado). Isso significa que avaliamos o tamanho da clínica, a quantidade de canais, o volume de atendimentos e o nível de integração desejado para montar uma proposta sob medida, sempre buscando retorno e não apenas custo.\n\nSe quiser, posso registrar seu interesse para que o time comercial prepare uma condição personalizada para você.\n\n1️⃣ Sim, quero que o time comercial prepare uma condição para mim.\n2️⃣ Não quero agora, quero conhecer mais o Vizô antes.";
+                        const voice = "Hoje não trabalhamos com tabela de preços fixa no chat. Todo projeto com o Vizô é tratado como sob consulta, avaliando o tamanho da clínica, a quantidade de canais, o volume de atendimentos e o nível de integração desejado para montar uma proposta sob medida, sempre buscando retorno e não apenas custo. Se quiser, posso registrar seu interesse para que o time comercial prepare uma condição personalizada para você. Responda 1 se você quer que o time comercial prepare uma condição, ou 2 se não quer agora e prefere conhecer mais o Vizô antes.";
+                        ConversationQueue.enqueue(msg, voice);
+                        this.state = "VIZO_SALES_BUDGET";
+                    }
+                    else if (norm.includes("menu") || norm.includes("voltar") || norm.includes("sair")) {
+                        this.forceSales = true;
+                        this.showVizoSalesIntro();
+                    }
+                    else {
+                        let isFourHandsAdmin = false;
+                        try {
+                            const adminUserFromSession = window.sessionStorage ? window.sessionStorage.getItem('vizô_user') : null;
+                            isFourHandsAdmin = ((adminUserFromSession || "").toUpperCase() === "FOURHANDS");
+                        } catch (e) {
+                            isFourHandsAdmin = false;
+                        }
+                        if (isFourHandsAdmin) {
+                            this.forceSales = true;
+                            this.showVizoSalesIntro();
+                        } else {
+                            const msg = "🤖 *Eu sou o Vizô!*\n\nSou uma Inteligência Artificial avançada, criada para revolucionar o atendimento oftalmológico.\n\nPosso responder sobre:\n💰 Custos e Orçamentos\n🎙️ Atendimento por Voz\n📹 Triagem por Vídeo\n🔗 Integração de Sistemas\n🚀 Funcionalidades Futuras\n\nO que você quer saber sobre mim? (Ou digite 'menu' para voltar)";
+                            ConversationQueue.enqueue(msg, "Eu sou o Vizô! Sou uma Inteligência Artificial avançada, criada para revolucionar o atendimento oftalmológico.");
+                        }
+                    }
+                    return;
+                }
+
+                // --- FIM DOS FLUXOS PRIORITÁRIOS ---
+
+                if (this.state === "MENU") {
+                    const onlyDigits = /^[0-9]+$/.test(text);
+                    const normalized = text.normalize("NFD").replace(/[\u0300-\u036f]/g, '');
+                    const greetings = ["bom dia", "boa tarde", "boa noite", "ola", "olá", "oi", "bonjour", "bonsoir", "salut"];
+                    const isGreeting = greetings.some(g => normalized.includes(g.normalize("NFD").replace(/[\u0300-\u036f]/g, '')));
+
+                    if (isGreeting) {
+                        const msgPt = "Olá! Que bom falar com você. Você está falando com o Vizô, assistente virtual da Pró-Visão Saúde Ocular. Estas são as opções disponíveis no momento:";
+                        const msgFr = "Bonjour ! Heureux de vous parler. Vous parlez avec Vizô, l’assistant virtuel de Pró‑Visão Santé Oculaire. Voici les options disponibles pour le moment :";
+                        const msg = chooseText(msgPt, msgFr);
+                        const _menu = this.getMenuText();
+                        if (_menu) {
+                            ConversationQueue.enqueue(msg + "\n" + _menu, msg);
+                        } else {
+                            ConversationQueue.enqueue(msg, msg);
+                        }
+                        this.invalidAttempts = 0;
+                        return;
+                    }
+
+                    // NLP Básico (Reconhecimento de Palavras-chave)
+                    if (text.includes("agendar") || text.includes("consulta") || text.includes("marcar") || text === "1") {
+                        if (!this.userData.interest) {
+                            this.userData.interest = "Consulta Rotina";
+                        }
+                        const msg = "É pra já! Vamos cuidar da saúde dos seus olhos. 👁️\n\nPara prosseguirmos com o agendamento, por favor, me informe seu Nome Completo.\n\n⚠️ Importante (LGPD): Precisamos desses dados apenas para identificar você e confirmar sua consulta. Você concorda?";
+                        ConversationQueue.enqueue(msg, msg);
+                        this.state = "AGENDAMENTO_NOME";
+                    }
+                    else if (text.includes("exame") || text.includes("checkup") || text === "2") {
+                        this.userData.interest = "Exames Rotina";
+                        const msg = "Aqui na Pró-Visão, nós cuidamos de tudo em um só lugar! 👁️✨\n\nDispomos de equipamentos novos de altíssima precisão. Realizamos:\n- Topografia de Córnea\n- Mapeamento de Retina\n- Campimetria Computadorizada\n- Biometria Óptica\n- Tomografia de Coerência Óptica (OCT)\n\nDeseja agendar exames?\n1️⃣ Sim\n2️⃣ Voltar";
+                        ConversationQueue.enqueue(msg, "Aqui na Pró-Visão, nós cuidamos de tudo em um só lugar! Dispomos de equipamentos de altíssima precisão.");
+                        this.state = "EXAMES";
+                    }
+                    else if (text.includes("especialista") || text.includes("medico") || text.includes("doutor") || text === "3") {
+                        this.userData.interest = "Consultas";
+                        let msg = "Conheça nossos especialistas:\n";
+                        this.especialistas.forEach(med => msg += `👨‍⚕️ ${med}\n`);
+                        msg += "\nDeseja agendar?\n1️⃣ Sim\n2️⃣ Voltar";
+                        const voiceList = this.especialistas.map(raw => {
+                            const med = String(raw || "").trim();
+                            if (/^Dra\.?\s+/i.test(med)) {
+                                return "Doutora " + med.replace(/^Dra\.?\s+/i, "");
+                            }
+                            if (/^Dr\.?\s+/i.test(med)) {
+                                return "Doutor " + med.replace(/^Dr\.?\s+/i, "");
+                            }
+                            return med;
+                        }).join(", ");
+                        const msgVoice = `Conheça nossos especialistas. Temos uma equipe excelente pronta para lhe atender. São eles: ${voiceList}. Se quiser, digite 1 para agendar uma consulta ou 2 para voltar ao menu.`;
+                        ConversationQueue.enqueue(msg, msgVoice);
+                        this.state = "ESPECIALISTAS";
+                    }
+                    else if (text.includes("humano") || text.includes("falar com") || text.includes("atendente") || text === "4") {
+                        const now = new Date();
+                        const hour = now.getHours();
+                        if (hour < 7 || hour >= 18) {
+                            const msg = "Neste momento estamos fora do nosso horário de atendimento humano (7h00 às 18h00).\n\nPosso continuar te ajudando aqui pelo Vizô agora mesmo, mas a equipe humana só retomará o contato no próximo horário comercial.\n\nSe preferir, escolha outra opção do menu abaixo:";
+                            const _menu = this.getMenuText();
+                            const html = _menu ? (msg + _menu) : msg;
+                            ConversationQueue.enqueue(
+                                html,
+                                "Estamos fora do horário de atendimento humano. A equipe retornará no próximo horário comercial."
+                            );
+                            this.state = "MENU";
+                            return;
+                        }
+
+                        ConversationQueue.enqueue("Um de nossos atendentes humanos irá assumir em breve. Por favor, aguarde... ⏳", "Um de nossos atendentes humanos irá assumir em breve.");
+                        
+                        fetch('/api/notify_attendant', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                name: this.userData.nome || "Visitante",
+                                phone: this.userData.whatsapp || "Não informado"
+                            })
+                        }).then(() => {
+                            console.log("Atendente notificado via sistema.");
+                        }).catch(err => console.error("Erro ao notificar atendente:", err));
+
+                        ConversationQueue.enqueue(
+                            "🔔 *Atendente notificado!*\n\nJá enviei uma mensagem prioritária para a equipe com seus dados.\n\nCaso prefira agilizar, clique abaixo para chamar diretamente:\n\n👉 <a href='https://wa.me/5596991603396?text=Olá,%20vim%20pelo%20site%20e%20gostaria%20de%20atendimento.' target='_blank' style='color: #128c7e; font-weight: bold; text-decoration: none;'>Iniciar Conversa no WhatsApp (96 99160-3396)</a>",
+                            "Notifiquei o atendente. Caso prefira, você pode clicar no link para chamar diretamente no WhatsApp."
+                        );
+                    }
+                    else if (text.includes("resultado") || (text.includes("exame") && text.includes("baixar")) || text === "5") {
+                        if (!this.userData.whatsapp) {
+                            ConversationQueue.enqueue("Para localizar seu exame e enviar o resultado, preciso que me informe seu **número de WhatsApp com DDD**.", "Para localizar seu exame, preciso do seu número de WhatsApp.");
+                            this.state = "WAITING_EXAM_PHONE";
+                        } else {
+                            this.showExamSearchUI();
+                        }
+                        return;
+                    }
+                    else if (text.includes("custo") || text.includes("custos") || text.includes("preco") || text.includes("preço") || text.includes("valor") || text.includes("orcamento") || text.includes("orçamento") || text.includes("plano") || text.includes("quanto")) {
+                        const msg = "Hoje não trabalhamos com tabela de preços fixa no chat. Todo projeto com o Vizô é tratado como Sob Consulta (Projeto Personalizado). Isso significa que avaliamos o tamanho da clínica, a quantidade de canais, o volume de atendimentos e o nível de integração desejado para montar uma proposta sob medida, sempre buscando retorno e não apenas custo.\n\nSe quiser, posso registrar seu interesse para que o time comercial prepare uma condição personalizada para você.\n\n1️⃣ Sim, quero que o time comercial prepare uma condição para mim.\n2️⃣ Não quero agora, quero conhecer mais o Vizô antes.";
+                        const voice = "Hoje não trabalhamos com tabela de preços fixa no chat. Todo projeto com o Vizô é tratado como sob consulta, avaliando o tamanho da clínica, a quantidade de canais, o volume de atendimentos e o nível de integração desejado para montar uma proposta sob medida, sempre buscando retorno e não apenas custo. Se quiser, posso registrar seu interesse para que o time comercial prepare uma condição personalizada para você. Responda 1 se você quer que o time comercial prepare uma condição, ou 2 se não quer agora e prefere conhecer mais o Vizô antes.";
+                        ConversationQueue.enqueue(msg, voice);
+                        this.state = "VIZO_SALES_BUDGET";
+                    }
+                    else if (onlyDigits) {
+                        ConversationQueue.enqueue("Para dar prosseguimento ao atendimento, por favor digite um número válido do menu, de 1 a 5.", "Para dar prosseguimento ao atendimento, por favor digite um número válido do menu, de 1 a 5.");
+                        const _menu = this.getMenuText();
+                        if (_menu) ConversationQueue.enqueue(_menu, "Estas são as opções disponíveis no momento.");
+                    }
+                    else {
+                        this.invalidAttempts = (this.invalidAttempts || 0) + 1;
+
+                        if (this.invalidAttempts >= 10) {
+                            const msg = "Essa não é uma opção válida para continuar o atendimento. Como você já fez várias tentativas sem escolher uma opção do menu, você será deslogado do sistema agora.";
+                            ConversationQueue.enqueue(msg, msg);
+                            
+                            setTimeout(() => {
+                                try {
+                                    if (typeof logout === "function") {
+                                        logout();
+                                    } else {
+                                        window.location.href = "login.html";
+                                    }
+                                } catch (e) {
+                                    console.error("Erro ao deslogar automaticamente:", e);
+                                }
+                            }, 2000);
+                        } else {
+                            const msg = "Essa não é uma opção válida para continuar o atendimento. Por favor, fale ou escreva uma das opções do menu, caso contrário não será possível prosseguir com o atendimento.";
+                            const voice = "Essa não é uma opção válida para continuar o atendimento. Por favor, fale ou escreva uma das opções do menu para que eu possa continuar o seu atendimento.";
+                            ConversationQueue.enqueue(msg, voice);
+                            const _menu = this.getMenuText();
+                            if (_menu) ConversationQueue.enqueue(_menu, "Estas são as opções disponíveis no momento.");
+                        }
+                    }
+                }
+                else if (this.state === "AGENDAMENTO_NOME") {
+                    this.userData.nome = text;
+                    ConversationQueue.enqueue(`Obrigado, ${text}! É um prazer receber o senhor aqui na Pró-Visão. 🌿\n\nPor gentileza, me informe seu *número de WhatsApp com DDD*.`, `Obrigado, ${text}! Por gentileza, me informe seu número de WhatsApp com DDD.`);
+                    this.state = "AGENDAMENTO_ZAP";
+                }
+                else if (this.state === "AGENDAMENTO_ZAP") {
+                    this.userData.whatsapp = text;
+                    
+                    // Salvar Lead na Planilha Google imediatamente
+                    fetch('/api/lead/save', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            name: this.userData.nome,
+                            phone: this.userData.whatsapp,
+                            status: "Lead Capturado (Aguardando Data)",
+                            source: (this.sourceData && this.sourceData.source) || null,
+                            medium: (this.sourceData && this.sourceData.medium) || null,
+                            campaign: (this.sourceData && this.sourceData.campaign) || null,
+                            context: (this.sourceData && this.sourceData.context) || null,
+                            interest: (this.userData && this.userData.interest) || null
+                        })
+                    }).catch(err => console.error("Erro ao salvar lead:", err));
+
+                    // Envia dados completos para "backend" (simulado)
+                    console.log("[METRICS] LEAD_CONVERTED", {
+                        ...this.userData,
+                        ...this.sourceData
+                    });
+
+                    const msg = `Tudo anotado! 👁️\nRecebi seu contato: ${text}.\n\nEscolha o especialista:\n` +
+                        this.especialistas.map((m, i) => `${i + 1}️⃣ ${m}`).join('\n') +
+                        "\n8️⃣ Qualquer especialista";
+                    ConversationQueue.enqueue(msg, "Tudo anotado! Escolha o especialista na lista abaixo.");
+                    this.state = "AGENDAMENTO_MEDICO";
+                }
+                else if (this.state === "AGENDAMENTO_MEDICO") {
+                    const choice = parseInt(text);
+                    let doctor = "Qualquer especialista";
+                    let feedbackMsg = "";
+                    
+                    if (choice >= 1 && choice <= 7) {
+                        doctor = this.especialistas[choice - 1];
+                        feedbackMsg = `Ótima escolha! O *${doctor}* é excelente. 👩‍⚕️✨`;
+                        const spokenDoctor = (() => {
+                            const med = String(doctor || "").trim();
+                            if (/^Dra\.?\s+/i.test(med)) {
+                                return "Doutora " + med.replace(/^Dra\.?\s+/i, "");
+                            }
+                            if (/^Dr\.?\s+/i.test(med)) {
+                                return "Doutor " + med.replace(/^Dr\.?\s+/i, "");
+                            }
+                            return med;
+                        })();
+                        this.userData.doctor = doctor;
+                        ConversationQueue.enqueue(feedbackMsg, `Otima escolha! ${spokenDoctor} é excelente.`);
+                        
+                        const dateMsg = "Para finalizar, qual a **data e hora** de sua preferência?\n(Ex: 03/03/2026 às 09:00)";
+                        ConversationQueue.enqueue(dateMsg, "Para finalizar, qual a data e hora de sua preferência?");
+                        this.state = "AGENDAMENTO_DATA";
+                    } else if (text === "8") {
+                        feedbackMsg = "Perfeito! Encaixaremos com o próximo especialista disponível. 👁️";
+                        this.userData.doctor = doctor;
+                        ConversationQueue.enqueue(feedbackMsg, "Perfeito! Encaixaremos com o próximo especialista disponível.");
+                        
+                        const dateMsg = "Para finalizar, qual a **data e hora** de sua preferência?\n(Ex: 03/03/2026 às 09:00)";
+                        ConversationQueue.enqueue(dateMsg, "Para finalizar, qual a data e hora de sua preferência?");
+                        this.state = "AGENDAMENTO_DATA";
+                    } else {
+                        feedbackMsg = `A sua resposta "${text}" não é uma resposta correta. Por favor, digite o número de seu atendimento para prosseguirmos.`;
+                        ConversationQueue.enqueue(feedbackMsg, feedbackMsg);
+                        // Mantém no estado AGENDAMENTO_MEDICO para nova tentativa
+                    }
+                }
+                else if (this.state === "AGENDAMENTO_DATA") {
+                    this.userData.dateTime = text;
+                    
+                    // Tentar extrair data e hora simples (apenas para passar pro backend tentar parsear melhor)
+                    // O backend espera separate date and time fields or handles strings.
+                    // Vamos passar o texto bruto e deixar o backend ou uma regex simples aqui tentar.
+                    
+                    // Simples regex para tentar separar YYYY-MM-DD e HH:MM se o usuario digitar bonitinho
+                    // Mas como é chat, pode vir de tudo. Vamos mandar o texto bruto no campo 'date' e 'time' vazios ou tentar parsear.
+                    // Melhor: Vamos tentar formatar aqui ou mandar bruto e o backend que se vire?
+                    // O backend atual espera 'date' (YYYY-MM-DD) e 'time' (HH:MM).
+                    
+                    // Hack simples para teste do usuario: 
+                    // Se o usuario digitar "03/03/2026 09:00", vamos tentar converter.
+                    let dateStr = "";
+                    let timeStr = "";
+                    
+                    try {
+                        const parts = text.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})\s.*?(\d{1,2}):(\d{2})/);
+                        if (parts) {
+                            dateStr = `${parts[3]}-${parts[2]}-${parts[1]}`; // YYYY-MM-DD
+                            timeStr = `${parts[4]}:${parts[5]}`;
+                        } else {
+                            // Tenta pegar só a data
+                            const dateOnly = text.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
+                            if (dateOnly) {
+                                dateStr = `${dateOnly[3]}-${dateOnly[2]}-${dateOnly[1]}`;
+                                timeStr = "09:00"; // Default time
+                            }
+                        }
+                    } catch (e) {
+                        console.log("Erro ao parsear data", e);
+                    }
+
+                    ConversationQueue.enqueue("Aguarde um momento, estou verificando a disponibilidade...", "Aguarde um momento, estou verificando a disponibilidade.");
+
+                    // Envio REAL para Google Calendar e Sheets via Backend
+                    fetch('/api/calendar/book', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            name: this.userData.nome,
+                            phone: this.userData.whatsapp,
+                            doctor: this.userData.doctor,
+                            date: dateStr,
+                            time: timeStr
+                        })
+                    })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                const displayDate = data.date_formatted || text;
+                                const displayTime = data.time_formatted || "";
+                                const doctor = this.userData.doctor || "Especialista";
+                                const patientNameSafe = (this.userData.nome || "").replace(/'/g, "\\'");
+                                const doctorSafe = doctor.replace(/'/g, "\\'");
+                                const phoneSafe = (this.userData.whatsapp || "").replace(/'/g, "\\'");
+                                const receiptLinkHtml = `<br><br>🧾 <a href="#" onclick="openAppointmentReceipt('${patientNameSafe}','${doctorSafe}','${displayDate}','${displayTime}','${phoneSafe}'); return false;" style="color: #2e70ce; font-weight: bold; text-decoration: none;">Imprimir ou baixar confirmação da consulta (PDF)</a>`;
+                                
+                                ConversationQueue.enqueue(
+                                    `✅ *Agendamento Confirmado!* \n\n` +
+                                    `📅 **Data:** ${displayDate}\n` +
+                                    `⏰ **Horário:** ${displayTime}\n` +
+                                    `👨‍⚕️ **Especialista:** ${doctor}\n\n` +
+                                    `Sua consulta já consta no sistema e a vaga foi registrada na agenda.\n` +
+                                    `🔗 <a href="${data.link}" target="_blank" style="color: #2e70ce; font-weight: bold; text-decoration: none;">📅 Ver no Google Calendar</a>` +
+                                    receiptLinkHtml, 
+                                    
+                                    `Agendamento Confirmado para dia ${displayDate} às ${displayTime} com ${doctor}. Sua consulta já consta no sistema.`
+                                );
+                            } else {
+                                ConversationQueue.enqueue("Tivemos um problema técnico, mas registramos seu interesse. Entraremos em contato.", "Tivemos um problema técnico, mas registramos seu interesse.");
+                            }
+                        })
+                        .catch(err => console.error("Erro ao agendar Google:", err));
+
+                    // Reset após 8 segundos
+                    ConversationQueue.enqueue("Voltando ao menu em instantes...", null, () => {
+                         setTimeout(() => this.reset(), 8000);
+                    });
+                }
+                else if (this.state === "EXAMES" || this.state === "ESPECIALISTAS") {
+                    if (text === "1") {
+                        ConversationQueue.enqueue("Iniciando agendamento...\nPor favor, me informe seu *Nome Completo*.", "Iniciando agendamento... Por favor, me informe seu Nome Completo.");
+                        this.state = "AGENDAMENTO_NOME";
+                    } else if (this.state === "ESPECIALISTAS") {
+                        const matchedDoctor = this.matchDoctorByName(raw);
+                        if (matchedDoctor) {
+                            this.userData.doctor = matchedDoctor;
+                            const msg = "Perfeito! Vamos seguir com o agendamento.\n\nPor favor, me informe seu *Nome Completo* para continuarmos.";
+                            ConversationQueue.enqueue(msg, "Perfeito! Vamos seguir com o agendamento. Por favor, me informe seu nome completo para continuarmos.");
+                            this.state = "AGENDAMENTO_NOME";
+                        } else {
+                            this.reset();
+                        }
+                    } else {
+                        this.reset();
+                    }
+                }
+            },
+
+            reset: function () {
+                const msg = "Como posso ajudar agora? Se preferir, digite menu para voltar ao menu inicial.";
+                const menuAudio = "Posso agendar sua consulta, explicar sobre nossos exames ou chamar um especialista humano. Por favor, escolha uma opção abaixo ou digite sua dúvida.";
+                const _menu = this.getMenuText();
+                const html = _menu ? (msg + _menu) : msg;
+                ConversationQueue.enqueue(
+                    html,
+                    _menu ? (msg + " " + menuAudio) : msg,
+                    () => { this.state = "MENU"; }
+                );
+            },
+
+            showExamSearchUI: function() {
+                // Progress Bar Message
+                const progressHtml = `
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 1.2em;">🔍</span>
+                            <span>Pesquisando em <strong>Arquivos Seguros</strong>...</span>
+                        </div>
+                        <div style="width: 100%; background: rgba(255,255,255,0.1); border-radius: 10px; height: 6px; overflow: hidden; margin-top: 5px;">
+                            <div style="width: 0%; height: 100%; background: #38ef7d; animation: progressLoad 2.5s ease-out forwards;"></div>
+                        </div>
+                    </div>
+                    <style>
+                        @keyframes progressLoad {
+                            0% { width: 5%; }
+                            50% { width: 60%; }
+                            100% { width: 100%; }
+                        }
+                    </style>
+                `;
+                addMessage(progressHtml, 'bot');
+                const progressMsg = document.querySelector('#chatArea .message.bot:last-child');
+                
+                // Simulate processing delay
+                setTimeout(() => {
+                    // Remove progress bar
+                    if(progressMsg) progressMsg.remove();
+                    
+                    // Success Message
+                    // Direct Download Link (Google Drive Export)
+                    const downloadLink = "https://drive.google.com/uc?export=download&id=1WAFPgQSrjFXh6t3xaVIR6cQqTb4ZNzbf";
+                    const viewLink = "https://drive.google.com/file/d/1WAFPgQSrjFXh6t3xaVIR6cQqTb4ZNzbf/view?usp=drive_link";
+                    const whatsappText = encodeURIComponent(`Olá, aqui está o resultado do seu exame para download: ${viewLink}`);
+                    const waLink = `https://wa.me/?text=${whatsappText}`;
+                    
+                    const userPhone = this.userData.whatsapp || "Não informado";
+                    fetch('/api/exam/send', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            phone: userPhone,
+                            link: viewLink
+                        })
+                    }).then(() => console.log("Exame enviado para API de disparo"));
+
+                    const successHtml = `
+                        ✅ <strong>Exame Localizado!</strong><br><br>
+                        Encontrei o arquivo <em>resultado_exame_2026.pdf</em>.<br><br>
+                        
+                        <div style="background: rgba(37, 211, 102, 0.1); border: 1px solid #25D366; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9em; display: flex; align-items: center; gap: 8px;">
+                            <span>📲</span>
+                            <span>Enviado automaticamente para <strong>${userPhone}</strong></span>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+                            <a href="${downloadLink}" download="resultado_exame_2026.pdf" style="
+                                display: flex; align-items: center; justify-content: center; gap: 8px;
+                                background: #38ef7d; color: #0f172a;
+                                padding: 12px; border-radius: 12px;
+                                text-decoration: none; font-weight: bold;
+                                transition: transform 0.2s;
+                            " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                                📥 Baixar Arquivo Agora
+                            </a>
+                            
+                            <a href="${viewLink}" target="_blank" style="
+                                display: flex; align-items: center; justify-content: center; gap: 8px;
+                                background: rgba(255,255,255,0.1); color: #fff;
+                                padding: 10px; border-radius: 12px;
+                                text-decoration: none; font-size: 0.9em;
+                            ">
+                                👁️ Apenas Visualizar
+                            </a>
+                        </div>
+                    `;
+                    
+                    addMessage(successHtml, 'bot');
+                    
+                    // TTS Feedback
+                    ConversationQueue.enqueue("Prontinho! Encontrei seu exame. Você pode baixá-lo diretamente clicando no botão verde.", "Prontinho! Encontrei seu exame.");
+                    
+                    // Tentativa de Auto-Download via iframe oculto (pode ser bloqueado pelo browser)
+                    const iframe = document.createElement('iframe');
+                    iframe.style.display = 'none';
+                    iframe.src = downloadLink;
+                    document.body.appendChild(iframe);
+                    setTimeout(() => document.body.removeChild(iframe), 60000);
+                    
+                }, 2500);
+            },
+
+            addBotMessage: function (text, showDisclaimer = true, shouldAutoClick = true) {
+                return new Promise((resolve) => {
+                    if (!hasUserInteraction) {
+                        resolve(null);
+                        return;
+                    }
+                    // Simular delay de digitação
+                    const typing = document.getElementById('typingIndicator');
+                    if (typing) typing.style.display = 'block';
+                    
+                    // Scroll para baixo quando começar a digitar
+                    const chatArea = document.getElementById('chatArea');
+                    chatArea.scrollTop = chatArea.scrollHeight;
+
+                    setTimeout(() => {
+                        if (typing) typing.style.display = 'none';
+                        logDebug("Adding bot message: " + text.substring(0, 20) + "...");
+                        
+                        // Check for Exam Search Tag
+                        let isExamSearch = false;
+                        if (text.includes('{{SEARCH_EXAM}}')) {
+                            isExamSearch = true;
+                            text = text.replace('{{SEARCH_EXAM}}', '');
+                        }
+
+                        const msgContent = showDisclaimer ? text + this.disclaimer : text;
+                        
+                        if (text.trim() || msgContent.trim()) {
+                            addMessage(msgContent, 'bot');
+                        }
+                        
+                        // Retornar o elemento da mensagem criada
+                        const lastMsg = document.querySelector('#chatArea .message.bot:last-child');
+
+                        // AUTO-PLAY: Tocar áudio automaticamente aproveitando a interação do usuário no Start Overlay
+                        if (shouldAutoClick && lastMsg) {
+                            const playBtn = lastMsg.querySelector('.play-btn');
+                            if (playBtn) {
+                                // Clica no botão para iniciar o áudio (usa a função playTTS já existente)
+                                playBtn.click();
+                            }
+                        }
+                        
+                        // Trigger Exam Search UI if needed
+                        if (isExamSearch) {
+                            this.showExamSearchUI();
+                        }
+                        
+                        resolve(lastMsg);
+                    }, 800);
+                });
+            },
+        };
+
+        try {
+            window.chatWidget = VizôBot;
+        } catch (e) {}
+
+        let isRecording = false;
+        let recognition = null;
+        let micReady = false;
+        let selectedDeviceId = localStorage.getItem('vizo_mic_device') || null;
+        let audioCtx = null, analyser = null, micStream = null, meterTimer = null;
+
+        function isSecureContextOk() {
+            return location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+        }
+
+        function updateLangToggleUI() {
+            const toggle = document.getElementById('langToggle');
+            if (!toggle) return;
+            const isFr = premiumFrEnabled && (currentLang || 'pt-BR').toLowerCase().startsWith('fr');
+            toggle.classList.toggle('fr', isFr);
+            const optPt = toggle.querySelector('[data-lang="pt-BR"]');
+            const optFr = toggle.querySelector('[data-lang="fr-FR"]');
+            if (optPt) optPt.classList.toggle('active', !isFr);
+            if (optFr) {
+                optFr.classList.toggle('active', isFr);
+                optFr.textContent = premiumFrEnabled ? 'FR' : 'FR 🔒';
+            }
+        }
+
+        const langToggle = document.getElementById('langToggle');
+        if (langToggle) {
+            updateLangToggleUI();
+            langToggle.addEventListener('click', function (e) {
+                const target = e.target.closest('.lang-option');
+                if (!target) return;
+                const newLang = target.getAttribute('data-lang') || 'pt-BR';
+                if (newLang.toLowerCase().startsWith('fr') && !premiumFrEnabled) {
+                    const msg = "O idioma francês está disponível somente para usuários Premium do Vizô. Fale com a QD Synapse para habilitar.";
+                    ConversationQueue.enqueue(msg, msg);
+                    return;
+                }
+                currentLang = newLang;
+                langAuto = false;
+                localStorage.setItem('vizo_lang', currentLang);
+                if (recognition) {
+                    recognition.lang = currentLang;
+                }
+                updateLangToggleUI();
+            });
+        }
+
+        async function populateMicDevices() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const inputs = devices.filter(d => d.kind === 'audioinput');
+                const sel = document.getElementById('micSelect');
+                if (!sel) return;
+                sel.innerHTML = '';
+                inputs.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d.deviceId;
+                    opt.textContent = d.label || `Microfone (${d.deviceId.slice(0,6)})`;
+                    sel.appendChild(opt);
+                });
+                if (inputs.length > 0) {
+                    sel.style.display = inputs.length > 1 ? 'inline-block' : 'none';
+                    if (selectedDeviceId && inputs.some(i => i.deviceId === selectedDeviceId)) {
+                        sel.value = selectedDeviceId;
+                    } else {
+                        selectedDeviceId = inputs[0].deviceId;
+                        sel.value = selectedDeviceId;
+                        localStorage.setItem('vizo_mic_device', selectedDeviceId);
+                    }
+                    sel.onchange = () => {
+                        selectedDeviceId = sel.value;
+                        localStorage.setItem('vizo_mic_device', selectedDeviceId);
+                        startMicMeter(); // reinicia com novo dispositivo
+                    };
+                }
+            } catch (e) {
+                console.warn('enumerateDevices falhou:', e);
+            }
+        }
+
+        async function startMicMeter() {
+            try {
+                stopMicMeter();
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+                const constraints = {
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true
+                    }
+                };
+                if (selectedDeviceId) constraints.audio.deviceId = { exact: selectedDeviceId };
+                micStream = await navigator.mediaDevices.getUserMedia(constraints);
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const source = audioCtx.createMediaStreamSource(micStream);
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 256;
+                source.connect(analyser);
+                const meter = document.getElementById('micMeter');
+                const fill = document.getElementById('micMeterFill');
+                meter.style.display = 'inline-block';
+                const data = new Uint8Array(analyser.frequencyBinCount);
+                function tick() {
+                    if (!analyser) return;
+                    analyser.getByteTimeDomainData(data);
+                    let sum = 0;
+                    for (let i = 0; i < data.length; i++) {
+                        const v = (data[i] - 128) / 128;
+                        sum += v * v;
+                    }
+                    const rms = Math.sqrt(sum / data.length);
+                    const pct = Math.min(100, Math.max(0, Math.round(rms * 200)));
+                    fill.style.width = pct + '%';
+                    meterTimer = requestAnimationFrame(tick);
+                }
+                meterTimer = requestAnimationFrame(tick);
+            } catch (e) {
+                console.warn('startMicMeter falhou:', e);
+                document.getElementById('micMeter').style.display = 'none';
+            }
+        }
+
+        function stopMicMeter() {
+            if (meterTimer) cancelAnimationFrame(meterTimer);
+            meterTimer = null;
+            if (analyser && analyser.disconnect) analyser.disconnect();
+            analyser = null;
+            if (audioCtx && audioCtx.close) audioCtx.close();
+            audioCtx = null;
+            if (micStream && micStream.getTracks) micStream.getTracks().forEach(t => t.stop());
+            micStream = null;
+            const meter = document.getElementById('micMeter');
+            if (meter) meter.style.display = 'none';
+        }
+
+        async function ensureMicPermission() {
+            try {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    return false;
+                }
+                if (navigator.permissions && navigator.permissions.query) {
+                    try {
+                        const p = await navigator.permissions.query({ name: 'microphone' });
+                        if (p.state === 'granted') {
+                            micReady = true;
+                            return true;
+                        }
+                    } catch (e) {}
+                }
+                const constraints = {
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true
+                    }
+                };
+                if (selectedDeviceId) constraints.audio.deviceId = { exact: selectedDeviceId };
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                if (stream && stream.getTracks) {
+                    stream.getTracks().forEach(t => t.stop && t.stop());
+                }
+                micReady = true;
+                populateMicDevices();
+                startMicMeter();
+                return true;
+            } catch (e) {
+                micReady = false;
+                return false;
+            }
+        }
+
+        // Inicializar Speech Recognition
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.lang = currentLang || 'pt-BR';
+            recognition.continuous = true;
+            recognition.interimResults = false;
+
+            recognition.onstart = function() {
+                isRecording = true;
+                const btn = document.getElementById('micBtn');
+                const input = document.getElementById('userInput');
+                btn.classList.add('recording');
+                btn.style.backgroundColor = '#ef4444'; // Red color for recording
+                btn.innerHTML = '⏹️'; // Stop icon
+                input.placeholder = "Ouvindo... (Fale agora)";
+                input.disabled = true;
+                clearTimeout(recognition._timeoutId);
+                recognition._timeoutId = setTimeout(() => {
+                    if (isRecording) recognition.stop();
+                }, 12000);
+            };
+
+            recognition.onend = function() {
+                isRecording = false;
+                const btn = document.getElementById('micBtn');
+                const input = document.getElementById('userInput');
+                btn.classList.remove('recording');
+                btn.style.backgroundColor = ''; // Reset color
+                btn.innerHTML = '🎙️';
+                input.placeholder = "Digite ou fale...";
+                input.disabled = false;
+            };
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                const input = document.getElementById('userInput');
+                input.value = transcript;
+                // Envia automaticamente após reconhecer
+                setTimeout(() => sendMessage(), 500);
+            };
+
+            recognition.onerror = function(event) {
+                isRecording = false;
+                const btn = document.getElementById('micBtn');
+                btn.innerHTML = '🎙️';
+                const err = (event && event.error) ? event.error : '';
+                if (err === 'not-allowed' || err === 'permission-denied' || err === 'service-not-allowed') {
+                    alert("Permissão do microfone negada.\n\nCorrija assim:\n1) Clique no cadeado ao lado do endereço do site e habilite Microfone.\n2) No Windows: Configurações > Privacidade > Microfone > Permitir acesso.\n3) Recarregue a página.");
+                } else if (err === 'audio-capture') {
+                    alert("Nenhum microfone foi detectado.\nConecte um microfone e tente novamente.");
+                } else if (err === 'no-speech') {
+                    if (!recognition._restarted) {
+                        recognition._restarted = true;
+                        recognition.start();
+                        return;
+                    }
+                    alert("Não foi detectado áudio.\nVerifique se o dispositivo correto está selecionado no navegador e aumente o volume do microfone.");
+                } else {
+                    alert("Erro ao capturar áudio. Verifique se o microfone está permitido.");
+                }
+            };
+        } else {
+            console.log("Web Speech API não suportada neste navegador.");
+            const btn = document.getElementById('micBtn');
+            btn.style.display = 'none'; // Esconde botão se não suportado
+        }
+
+        function toggleRecording() {
+            if (!recognition) {
+                alert("Seu navegador não suporta reconhecimento de voz.");
+                return;
+            }
+
+            if (!isSecureContextOk()) {
+                alert("Para capturar áudio no navegador, acesse via HTTPS ou localhost.");
+                return;
+            }
+
+            if (!isRecording) {
+                ensureMicPermission().then(ok => {
+                    if (!ok) {
+                        alert("O navegador não tem permissão para usar o microfone.\nHabilite o microfone nas permissões do site e tente novamente.");
+                        return;
+                    }
+                    recognition.start();
+                });
+            } else {
+                recognition.stop();
+            }
+        }
+
+        // Função antiga simulada removida e substituída pela real acima
+        // function sendAudioMessage() { ... }
+
+        // Funções de UI
+        function cleanTTS(text) {
+            if (!text) return "";
+            let t = String(text);
+            const emojiRegex = /(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/g;
+            t = t.replace(emojiRegex, '');
+            t = t.replace(/[*_#`~]/g, '');
+            t = t.replace(/\(LGPD\)/gi, '');
+            t = t.replace(/\bLGPD\b/gi, '');
+            t = t.replace(/qd synapse inova ltda\.?/gi, 'Quê Dê Sinapse Inova Limitada');
+            t = t.replace(/qd\s+synapse\s+inova\s+ltda/gi, 'Quê Dê Sinapse Inova Limitada');
+            t = t.replace(/\s{2,}/g, ' ').trim();
+            return t;
+        }
+
+        function getAudioHTML(duration = "0:05", textToSpeak = "") {
+            const safeText = cleanTTS(textToSpeak).replace(/'/g, "\\'");
+            return `
+                <div class="audio-player">
+                    <div class="play-btn" onclick="playTTS(this, '${safeText}')">▶</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div class="audio-time">${duration}</div>
+                </div>
+            `;
+        }
+
+        let availableVoices = [];
+        let currentVoiceSettings = null;
+        let currentGlobalAudio = null; // Controle global de áudio para evitar sobreposições
+        let currentTTSResolve = null; // Resolver global para Browser TTS
+        const audioCache = {}; // Cache para evitar re-fetch de áudio
+
+        // Carregar configurações de voz do backend
+        async function loadVoiceSettings() {
+            try {
+                const response = await fetch('/api/settings');
+                if (response.ok) {
+                    currentVoiceSettings = await response.json();
+                }
+            } catch (error) {
+                console.error("Erro ao carregar configurações de voz:", error);
+            }
+        }
+
+        // Pré-carregar áudio (chamado pela fila)
+        async function prefetchAudio(text) {
+            const cleanText = cleanTTS(text);
+            if (audioCache[cleanText]) return audioCache[cleanText];
+
+            await loadVoiceSettings();
+
+            const baseSettings = currentVoiceSettings || {
+                voice_id: "JBFqnCBsd6RMkjVDRZzb",
+                model_id: "eleven_multilingual_v2",
+                stability: 0.5,
+                similarity_boost: 0.75,
+                style: 0.0,
+                use_speaker_boost: true
+            };
+
+            const payload = { ...baseSettings };
+
+            let lang = currentLang || 'pt-BR';
+            if (langAuto) {
+                const detected = detectLangFromText(text);
+                if (detected) {
+                    lang = detected;
+                }
+            }
+
+            const lowerLang = String(lang).toLowerCase();
+            let chosenVoiceId = payload.voice_id;
+
+            if (lowerLang.startsWith('fr') && premiumFrEnabled) {
+                chosenVoiceId = payload.voice_id_fr || payload.voice_id_pt || payload.voice_id;
+            } else {
+                chosenVoiceId = payload.voice_id_pt || payload.voice_id;
+            }
+
+            payload.voice_id = chosenVoiceId;
+
+            try {
+                const response = await fetch("/api/preview", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text: cleanText, ...payload })
+                });
+
+                if (!response.ok) throw new Error(`API Error: ${response.status}`);
+
+                const blob = await response.blob();
+                const audioUrl = URL.createObjectURL(blob);
+                audioCache[cleanText] = audioUrl;
+                return audioUrl;
+            } catch (error) {
+                console.error("Erro no prefetch:", error);
+                return null;
+            }
+        }
+
+        // Garantir carregamento das vozes do navegador (fallback)
+        window.speechSynthesis.onvoiceschanged = () => {
+            availableVoices = window.speechSynthesis.getVoices();
+        };
+
+        async function playTTS(btn, text) {
+            const isPlaying = btn.innerHTML === '⏸' || btn.classList.contains('loading');
+
+            // Parar qualquer áudio anterior (Navegador)
+            window.speechSynthesis.cancel();
+            if (currentTTSResolve) {
+                currentTTSResolve();
+                currentTTSResolve = null;
+            }
+
+            // Parar áudios de API (Audio Elements)
+            document.querySelectorAll('audio').forEach(a => a.pause());
+            
+            // Parar áudio global anterior se existir
+            if (currentGlobalAudio) {
+                currentGlobalAudio.pause();
+                if (currentGlobalAudio._resolvePromise) {
+                    currentGlobalAudio._resolvePromise(); // Resolve a promise pendente
+                }
+                currentGlobalAudio = null;
+            }
+
+            // Resetar todos os botões
+            document.querySelectorAll('.play-btn').forEach(b => {
+                b.innerHTML = '▶';
+                b.classList.remove('loading');
+            });
+            document.querySelectorAll('.progress-fill').forEach(p => p.style.width = '0%');
+
+            if (isPlaying) {
+                return Promise.resolve(); // Se estava tocando, apenas parou
+            }
+
+            // Tentar usar API ElevenLabs via Backend (ou cache)
+            return playElevenLabsTTS(btn, cleanTTS(text));
+        }
+
+        function playElevenLabsTTS(btn, text) {
+            return new Promise(async (resolve) => {
+                try {
+                    btn.innerHTML = '⏳'; // Loading spinner
+                    btn.classList.add('loading');
+
+                    // Tentar obter URL do áudio (do cache ou novo fetch)
+                    let audioUrl = await prefetchAudio(text);
+                    
+                    if (!audioUrl) {
+                        throw new Error("Falha ao obter áudio");
+                    }
+
+                    const audio = new Audio(audioUrl);
+                    audio._resolvePromise = resolve; // Store resolve function
+                    currentGlobalAudio = audio; // Registrar globalmente
+
+                    // Anexar áudio ao DOM para poder parar depois se necessário
+                    btn.parentElement.appendChild(audio);
+
+                    audio.onplay = () => {
+                        btn.innerHTML = '⏸';
+                        btn.classList.remove('loading');
+                    };
+
+                    audio.onended = () => {
+                        btn.innerHTML = '▶';
+                        const progressBar = btn.parentElement.querySelector('.progress-fill');
+                        progressBar.style.width = '100%';
+                        currentGlobalAudio = null; // Limpar referência
+                        resolve(); // RESOLVE PROMISE
+                    };
+
+                    // Atualizar barra de progresso
+                    audio.ontimeupdate = () => {
+                        const progressBar = btn.parentElement.querySelector('.progress-fill');
+                        if (audio.duration) {
+                            const progress = (audio.currentTime / audio.duration) * 100;
+                            progressBar.style.width = `${progress}%`;
+                        }
+                    };
+
+                    audio.play().catch(e => {
+                        console.log("Autoplay blocked or failed, trying Browser TTS:", e);
+                        // Se falhar o autoplay, tentar fallback do navegador para não perder a fala
+                        btn.classList.remove('loading');
+                        playBrowserTTS(btn, text).then(resolve);
+                    });
+
+                } catch (error) {
+                    console.error("Erro na API ElevenLabs:", error);
+                    // Fallback para navegador se der erro (ex: cota excedida, servidor offline)
+                    btn.classList.remove('loading');
+                    playBrowserTTS(btn, text).then(resolve);
+                }
+            });
+        }
+
+        function playBrowserTTS(btn, text) {
+            return new Promise((resolve) => {
+                if (currentTTSResolve) currentTTSResolve(); // Resolve previous if any
+                currentTTSResolve = resolve;
+
+                // Iniciar nova fala
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = currentLang || 'pt-BR';
+
+                // OTIMIZAÇÃO DE VOZ PARA HUMANIZAÇÃO
+                if (availableVoices.length === 0) availableVoices = window.speechSynthesis.getVoices();
+
+                let langVoices = availableVoices.filter(v => v.lang && v.lang.includes(currentLang || 'pt-BR'));
+                if (langVoices.length === 0) {
+                    langVoices = availableVoices.filter(v => v.lang && v.lang.includes('pt-BR'));
+                }
+
+                // Tenta encontrar vozes neurais/naturais (comuns no Edge/Chrome)
+                const preferredVoice = langVoices.find(v => v.name.includes('Online (Natural)')) ||
+                    langVoices.find(v => v.name.includes('Google')) ||
+                    langVoices.find(v => v.name.includes('Luciana')) ||
+                    langVoices[0];
+
+                if (preferredVoice) {
+                    utterance.voice = preferredVoice;
+                    // Ajustes finos baseados no tipo de voz
+                    if (preferredVoice.name.includes('Google')) {
+                        utterance.rate = 1.1; // Google costuma ser lenta
+                        utterance.pitch = 1.0;
+                    } else if (preferredVoice.name.includes('Natural')) {
+                        utterance.rate = 1.0; // Vozes neurais já têm ritmo bom
+                        utterance.pitch = 1.0;
+                    } else {
+                        utterance.rate = 1.0;
+                        utterance.pitch = 1.1; // Vozes robóticas ficam melhores levemente mais agudas
+                    }
+                }
+
+                // Eventos visuais
+                btn.innerHTML = '⏸';
+                const progressBar = btn.parentElement.querySelector('.progress-fill');
+
+                // Simulação de progresso baseada na duração estimada
+                let progress = 0;
+                const charRate = 60; // ms por caractere aproximado
+                const durationEstimate = text.length * charRate;
+
+                const interval = setInterval(() => {
+                    if (window.speechSynthesis.speaking) {
+                        progress += 100 / (durationEstimate / 100);
+                        if (progress > 100) progress = 100;
+                        progressBar.style.width = `${progress}%`;
+                    } else {
+                        clearInterval(interval);
+                    }
+                }, 100);
+
+                utterance.onend = () => {
+                    btn.innerHTML = '▶';
+                    progressBar.style.width = '100%';
+                    clearInterval(interval);
+                    currentTTSResolve = null;
+                    resolve(); // RESOLVE PROMISE
+                };
+
+                utterance.onerror = () => {
+                    btn.innerHTML = '▶';
+                    clearInterval(interval);
+                    currentTTSResolve = null;
+                    resolve(); // RESOLVE PROMISE
+                };
+
+                window.speechSynthesis.speak(utterance);
+            });
+        }
+
+        // This function is now for user messages only
+        function addMessage(text, sender) {
+            // LOGGING AUTOMÁTICO
+            logMessageToBackend(sender, text);
+
+            const chatArea = document.getElementById('chatArea');
+            const div = document.createElement('div');
+            div.className = `message ${sender}`;
+
+            // Converter quebras de linha em <br>
+            const clean = (text || '').replace(/\*/g, '');
+            div.innerHTML = clean.replace(/\n/g, '<br>');
+
+            const time = document.createElement('div');
+            time.className = 'message-time';
+            const now = new Date();
+            time.innerText = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            div.appendChild(time);
+            chatArea.appendChild(div);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        // Assuming VizôBot is an object where these methods will be added
+        // This part needs to be integrated into the VizôBot object definition
+        // For now, I'll define them globally as per the snippet's structure,
+        // but this might need adjustment based on VizôBot's actual definition.
+
+        // New addBotMessage and fakeTyping functions (assuming they are methods of VizôBot)
+        // If VizôBot is not defined as an object, this will need to be adjusted.
+        // For the purpose of this edit, I'm placing them as global functions,
+        // but the `this.scrollToBottom()` implies they belong to an object.
+        // I will assume `VizôBot.scrollToBottom` exists or will be added.
+
+
+
+
+        function openAppointmentReceipt(name, doctor, date, time, phone) {
+            const w = window.open('', '_blank');
+            if (!w) return;
+            const html = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Comprovante de Consulta - Pró-Visão</title>
+<style>
+body { font-family: system-ui, -apple-system, Segoe UI, sans-serif; margin:0; padding:24px; background:#0b1220; color:#e5e7eb; }
+.card { max-width:540px; margin:0 auto; background:#020617; border-radius:12px; border:1px solid #1e293b; padding:24px 28px; }
+h1 { font-size:1.4rem; margin:0 0 8px; color:#e5e7eb; }
+.subtitle { color:#9ca3af; font-size:.9rem; margin-bottom:16px; }
+.row { margin-bottom:8px; font-size:.95rem; }
+.label { color:#64748b; font-weight:600; margin-right:6px; }
+.value { color:#e5e7eb; }
+.footer { margin-top:16px; font-size:.8rem; color:#64748b; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Comprovante de Consulta</h1>
+  <div class="subtitle">Clínica Pró-Visão Saúde Ocular Macapá</div>
+  <div class="row"><span class="label">Paciente:</span><span class="value">${name || ""}</span></div>
+  <div class="row"><span class="label">Especialista:</span><span class="value">${doctor || ""}</span></div>
+  <div class="row"><span class="label">Data:</span><span class="value">${date || ""}</span></div>
+  <div class="row"><span class="label">Horário:</span><span class="value">${time || ""}</span></div>
+  <div class="row"><span class="label">WhatsApp:</span><span class="value">${phone || ""}</span></div>
+  <div class="footer">Este comprovante foi gerado automaticamente pelo assistente Vizô. Use a opção de impressão do navegador para salvar em PDF ou imprimir.</div>
+</div>
+</body>
+</html>`;
+            w.document.open();
+            w.document.write(html);
+            w.document.close();
+            w.focus();
+            try { w.print(); } catch (e) {}
+        }
+
+        let fourHandsInteractionCount = 0;
+
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const text = input.value.trim();
+            if (text === "") return;
+
+            if (!hasUserInteraction) {
+                hasUserInteraction = true;
+                try { ConversationQueue.processNext(); } catch (e) {}
+            }
+
+            if (langAuto) {
+                const detected = detectLangFromText(text);
+                if (detected) {
+                    if (detected.toLowerCase().startsWith('fr') && !premiumFrEnabled) {
+                        const msg = "O idioma francês está disponível somente para usuários Premium do Vizô. Sua conversa continuará em Português.";
+                        ConversationQueue.enqueue(msg, msg);
+                        currentLang = 'pt-BR';
+                    } else {
+                        currentLang = detected;
+                    }
+                    localStorage.setItem('vizo_lang', currentLang);
+                    if (recognition) recognition.lang = currentLang;
+                    updateLangToggleUI();
+                }
+                langAuto = false;
+            }
+
+            addMessage(text, 'user');
+            input.value = "";
+
+            if (!vizoInitialized) {
+                try {
+                    await doVizoInit();
+                } catch (e) {
+                    console.error("Erro ao inicializar VizôBot:", e);
+                }
+            }
+
+            try {
+                const adminUser = window.sessionStorage ? window.sessionStorage.getItem('vizô_user') : null;
+                if ((adminUser || "").toUpperCase() === "FOURHANDS") {
+                    fourHandsInteractionCount += 1;
+                    if (fourHandsInteractionCount >= 5) {
+                        fourHandsInteractionCount = 0;
+                        resetVizoTestState();
+                        return;
+                    }
+                }
+            } catch (e) {}
+
+            VizôBot.processInput(text);
+        }
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') sendMessage();
+        }
+
+        async function doVizoInit() {
+            if (vizoInitialized) return vizoInitPromise;
+
+            if (typeof VizôBot === 'undefined') {
+                logDebug("FATAL: VizôBot undefined");
+                console.error("FATAL: VizôBot não definido!");
+                showDebug();
+                document.body.innerHTML += '<div style="color:red; text-align:center; padding:50px;">Erro Crítico: Sistema não carregado corretamente.</div>';
+                return null;
+            }
+
+            if (!vizoInitPromise) {
+                logDebug("Bootstrapping Vizô (lazy)...");
+                const initTimeout = setTimeout(() => {
+                    logDebug("TIMEOUT: Inicialização demorou muito. Verifique console.");
+                    showDebug();
+                }, 5000);
+
+                vizoInitPromise = VizôBot.init().then(() => {
+                    clearTimeout(initTimeout);
+                    vizoInitialized = true;
+                    logDebug("VizôBot initialized successfully");
+                    createHiddenTestButton();
+                    return true;
+                }).catch(err => {
+                    clearTimeout(initTimeout);
+                    logDebug("FATAL ERROR: " + err.message);
+                    console.error("Erro fatal na inicialização:", err);
+                    showDebug();
+                    document.body.innerHTML += '<div style="position:fixed; top:10px; left:50%; transform:translateX(-50%); background:red; color:white; padding:10px; border-radius:5px; z-index:9999;">Erro de Conexão. <button onclick="location.reload()">Recarregar</button></div>';
+                    return false;
+                });
+            }
+
+            return vizoInitPromise;
+        }
+
+        function bootstrapVizo() {
+            doVizoInit();
+        }
+
+        // Expor inicialização para o pai (widget em iframe)
+        window.startVizo = function () {
+            bootstrapVizo();
+        };
+
+        // Auto-inicializar apenas quando não estiver em iframe (acesso direto a /chat)
+        if (window.top === window.self) {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', bootstrapVizo);
+            } else {
+                // Se já carregou (interactive ou complete), roda direto
+                setTimeout(bootstrapVizo, 100); // Pequeno delay para garantir renderização
+            }
+        }
+        const infoBtn = document.getElementById('infoBtn');
+        const infoModal = document.getElementById('infoModal');
+        const closeModal = document.getElementById('closeModal');
+        const tabs = document.querySelectorAll('.tab');
+        const contents = {
+            priv: document.getElementById('tab-priv'),
+            direitos: document.getElementById('tab-direitos'),
+            manual: document.getElementById('tab-manual')
+        };
+
+        function openInfoModal() { if (infoModal) infoModal.style.display = 'flex'; }
+        function closeInfo() { if (infoModal) infoModal.style.display = 'none'; }
+
+        if (infoBtn) infoBtn.addEventListener('click', openInfoModal);
+        if (closeModal) closeModal.addEventListener('click', closeInfo);
+        if (infoModal) infoModal.addEventListener('click', function(e){ if (e.target === infoModal) closeInfo(); });
+        document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeInfo(); });
+        tabs.forEach(function(t){
+            t.addEventListener('click', function(){
+                tabs.forEach(function(tt){ tt.classList.remove('active'); });
+                t.classList.add('active');
+                Object.values(contents).forEach(function(c){ c.classList.remove('active'); });
+                const key = t.getAttribute('data-tab');
+                const el = contents[key];
+                if (el) el.classList.add('active');
+            });
+        });
+
+        // --- Arrastar o chat completo pela barra de cabeçalho ---
+        (function enableChatDrag(){
+            const chat = document.querySelector('.chat-container');
+            const handle = document.querySelector('.header');
+            if (!chat || !handle) return;
+            let dragging = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
+            function clamp(val, min, max){ return Math.max(min, Math.min(max, val)); }
+
+            // Aplicar posição salva
+            try {
+                const pos = JSON.parse(localStorage.getItem('vizo_chat_pos') || 'null');
+                if (pos) {
+                    chat.style.position = 'fixed';
+                    chat.style.left = pos.left + 'px';
+                    chat.style.top = pos.top + 'px';
+                }
+            } catch (e) {}
+
+            handle.addEventListener('mousedown', function(e){
+                dragging = true;
+                const rect = chat.getBoundingClientRect();
+                chat.style.position = 'fixed';
+                startLeft = rect.left;
+                startTop = rect.top;
+                startX = e.clientX;
+                startY = e.clientY;
+                document.body.style.userSelect = 'none';
+            });
+
+            document.addEventListener('mousemove', function(e){
+                if (!dragging) return;
+                let newLeft = startLeft + (e.clientX - startX);
+                let newTop = startTop + (e.clientY - startY);
+                const maxLeft = window.innerWidth - chat.offsetWidth - 8;
+                const maxTop = window.innerHeight - chat.offsetHeight - 8;
+                newLeft = clamp(newLeft, 8, Math.max(8, maxLeft));
+                newTop = clamp(newTop, 8, Math.max(8, maxTop));
+                chat.style.left = newLeft + 'px';
+                chat.style.top = newTop + 'px';
+            });
+
+            document.addEventListener('mouseup', function(){
+                if (!dragging) return;
+                dragging = false;
+                document.body.style.userSelect = '';
+                try {
+                    const rect = chat.getBoundingClientRect();
+                    localStorage.setItem('vizo_chat_pos', JSON.stringify({ left: rect.left, top: rect.top }));
+                } catch (e) {}
+            });
+
+            // Duplo clique para resetar posição ao centro
+            handle.addEventListener('dblclick', function(){
+                chat.style.position = '';
+                chat.style.left = '';
+                chat.style.top = '';
+                localStorage.removeItem('vizo_chat_pos');
+            });
+        })();
+    </script>
+</body>
+</html>

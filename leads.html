@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <script>
+        if (sessionStorage.getItem('vizô_auth') !== 'true') {
+            window.location.href = 'login.html';
+        }
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leads Capturados - Vizô Admin</title>
+    <!-- jsPDF e AutoTable para exportação -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    
+    <style>
+        :root {
+            --primary: #2e70ce;
+            --secondary: #0b2447;
+            --success: #10b981;
+            --bg: #f3f4f6;
+            --card: #ffffff;
+            --text: #1f2937;
+            --gray: #6b7280;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: var(--card);
+            padding: 1rem 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo{display:flex;align-items:center;gap:8px;font-size:1.3rem;font-weight:bold;color:var(--secondary);cursor:pointer}
+        .logo img{height:28px;width:auto;display:block}
+        .nav-links { display: flex; gap: 1rem; }
+        .nav-link { text-decoration: none; color: var(--gray); font-weight: 500; }
+        .nav-link:hover, .nav-link.active { color: var(--primary); }
+
+        .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+        
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-primary:hover { background-color: #1d4ed8; }
+
+        .card {
+            background: var(--card);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #e5e7eb; }
+        th { font-weight: 600; color: var(--gray); font-size: 0.875rem; }
+        tbody tr:hover { background-color: #f9fafb; }
+        
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .status-novo { background-color: #dbeafe; color: #1e40af; }
+        .status-agendado { background-color: #dcfce7; color: #166534; }
+
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo" onclick="window.location.href='index.html'"><img src="logo_vizo.svg" alt="Vizô"><span>Vizô Admin</span></div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">Dashboard</a>
+            <a href="#" class="nav-link active">Leads Capturados</a>
+        </div>
+        <button onclick="logout()" style="padding: 0.5rem 1rem; background: #ef4444; color: white; border: none; border-radius: 0.5rem; cursor: pointer;">Sair</button>
+    </header>
+
+    <div class="container">
+        <div class="header-actions">
+            <div>
+                <h1>Pacientes Capturados</h1>
+                <p style="color: var(--gray);">Lista completa de contatos gerados pelo assistente virtual</p>
+            </div>
+            <button class="btn btn-primary" onclick="exportPDF()">
+                📄 Exportar Relatório PDF
+            </button>
+        </div>
+
+        <div class="card">
+            <table id="leadsTable">
+                <thead>
+                    <tr>
+                        <th>Data/Hora</th>
+                        <th>Nome do Paciente</th>
+                        <th>WhatsApp</th>
+                        <th>Interesse</th>
+                        <th>Origem</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="leadsBody">
+                    <!-- Preenchido via JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="dashboard_data.js"></script>
+    <script>
+        function logout() {
+            sessionStorage.removeItem('vizô_auth');
+            sessionStorage.removeItem('vizô_user');
+            window.location.href = 'login.html';
+        }
+
+        async function fetchLeads() {
+            try {
+                const res = await fetch('/api/leads');
+                if (!res.ok) return [];
+                return await res.json();
+            } catch (e) {
+                console.error('Erro ao carregar leads do backend:', e);
+                return [];
+            }
+        }
+
+        async function renderTable() {
+            const tbody = document.getElementById('leadsBody');
+            const allLeads = await fetchLeads();
+
+            tbody.innerHTML = allLeads.map(lead => `
+                <tr>
+                    <td>${lead.created_at}</td>
+                    <td><strong>${lead.name}</strong></td>
+                    <td>${lead.phone || '96 9xxxx-xxxx'}</td>
+                    <td>${lead.interest || 'Consulta'}</td>
+                    <td><span style="font-size: 0.9em; color: var(--gray);">${lead.source || 'Desconhecido'}</span></td>
+                    <td><span class="status-badge ${lead.status === 'Novo Lead' ? 'status-novo' : 'status-agendado'}">${lead.status}</span></td>
+                </tr>
+            `).join('');
+            
+            return allLeads;
+        }
+
+        let leadsData = [];
+        document.addEventListener('DOMContentLoaded', async function () {
+            leadsData = await renderTable();
+        });
+
+        // Exportar PDF
+        function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Cabeçalho
+            doc.setFontSize(18);
+            doc.text("Relatório de Pacientes - Pró-Visão", 14, 22);
+            doc.setFontSize(11);
+            doc.text(`Gerado em: ${new Date().toLocaleString()}`, 14, 30);
+
+            // Dados da tabela
+            const tableColumn = ["Data", "Nome", "WhatsApp", "Interesse", "Origem", "Status"];
+            const tableRows = [];
+
+            leadsData.forEach(lead => {
+                const leadData = [
+                    lead.time,
+                    lead.name,
+                    lead.phone || '96 9xxxx-xxxx',
+                    lead.type || lead.interest || 'Consulta',
+                    lead.source || 'Desconhecido',
+                    lead.status
+                ];
+                tableRows.push(leadData);
+            });
+
+            doc.autoTable({
+                head: [tableColumn],
+                body: tableRows,
+                startY: 40,
+                theme: 'grid',
+                headStyles: { fillColor: [46, 112, 206] }
+            });
+
+            doc.save('pacientes_provisao.pdf');
+        }
+    </script>
+</body>
+</html>

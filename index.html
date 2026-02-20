@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <script>
+        // Verificação de segurança (Auth)
+        if (sessionStorage.getItem('vizô_auth') !== 'true') {
+            window.location.href = 'login.html';
+        }
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vizô Dashboard - Métricas de Atendimento</title>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Google API Libraries (Reference: developers.google.com/workspace/calendar/api/quickstart/js) -->
+    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+
+    <style>
+        :root {
+            --primary: #2e70ce;
+            --secondary: #0b2447;
+            --success: #10b981;
+            --bg: #f3f4f6;
+            --card: #ffffff;
+            --text: #1f2937;
+            --gray: #6b7280;
+            --border: #e5e7eb;
+        }
+
+        /* Dark Mode Variables */
+        body.dark-mode {
+            --bg: #111827;
+            --card: #1f2937;
+            --text: #f9fafb;
+            --gray: #9ca3af;
+            --border: #374151;
+            --secondary: #3b82f6;
+            /* Mais claro no dark */
+        }
+
+        body.dark-mode .card,
+        body.dark-mode header,
+        body.dark-mode .chat-widget {
+            background-color: var(--card);
+            color: var(--text);
+            border-color: var(--border);
+        }
+
+        body.dark-mode th,
+        body.dark-mode td {
+            border-color: var(--border);
+            color: var(--text);
+        }
+
+        body.dark-mode .nav-link {
+            color: var(--gray);
+        }
+
+        body.dark-mode .nav-link.active {
+            color: var(--secondary);
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 2000;
+        }
+
+        .toast {
+            background: white;
+            color: #1f2937;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 0.5rem;
+            border-left: 4px solid var(--success);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            animation: slideInRight 0.3s ease-out;
+            min-width: 300px;
+        }
+
+        body.dark-mode .toast {
+            background: #1f2937;
+            color: white;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Floating Action Button (FAB) */
+        .fab {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background-color: #25D366;
+            /* WhatsApp Green */
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 2rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+            z-index: 1000;
+        }
+        .fab img{width:28px;height:28px;display:block}
+
+        .fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .fab::after {
+            content: 'Falar com Vizô';
+            position: absolute;
+            right: 70px;
+            background: #333;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+        }
+
+        .fab:hover::after {
+            opacity: 1;
+        }
+
+        /* Widget do Chat Flutuante */
+        .chat-widget {
+            position: fixed;
+            bottom: 6rem;
+            right: 2rem;
+            width: 380px;
+            height: 600px;
+            max-height: 80vh;
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.15);
+            z-index: 999;
+            display: none;
+            /* Começa oculto */
+            overflow: hidden;
+            flex-direction: column;
+            border: 1px solid #e5e7eb;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .chat-header-widget {
+            background-color: var(--secondary);
+            color: white;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        .chat-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .logo{display:flex;align-items:center;gap:8px;font-size:1.3rem;font-weight:700;color:var(--primary)}
+        .logo img{height:28px;width:auto;display:block}
+
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0;
+            color: var(--primary);
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .number {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--secondary);
+            letter-spacing: -1px;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 24px;
+        }
+
+        .card h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: var(--gray);
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .card .value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .card .trend {
+            font-size: 12px;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .trend.up {
+            color: var(--success);
+        }
+
+        .trend.down {
+            color: var(--danger);
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        th {
+            background-color: #f9fafb;
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--gray);
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-Agendado {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-Pendente {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-Cancelado {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-Em-Atendimento {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Heatmap Styles */
+        .heatmap-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .heatmap-table th,
+        .heatmap-table td {
+            border: 1px solid #e5e7eb;
+            text-align: center;
+            padding: 0.5rem;
+        }
+
+        .heatmap-cell {
+            border-radius: 4px;
+            color: transparent;
+            /* Esconde o número se quiser só cor, ou mostra */
+            color: #1f2937;
+            font-weight: 500;
+        }
+
+        /* Ranking Styles */
+        .ranking-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .ranking-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .ranking-item:last-child {
+            border-bottom: none;
+        }
+
+        .medal {
+            margin-right: 0.5rem;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="logo"><img src="logo_vizo.svg" alt="Vizô"><span>Vizô Analytics</span></div>
+        <div class="nav-links" style="display: flex; gap: 1rem; margin-left: 2rem;">
+            <a href="#" class="nav-link active" style="text-decoration: none; font-weight: bold;">Dashboard</a>
+            <a href="leads.html" class="nav-link" style="text-decoration: none; font-weight: 500;">Leads Capturados</a>
+            <a href="dashboard_voices.html" class="nav-link" style="text-decoration: none; font-weight: 500;">Configurar Voz</a>
+            <a href="chat.html" class="nav-link" style="text-decoration: none; font-weight: 500;">Chat</a>
+            <a href="faq.html" class="nav-link" style="text-decoration: none; font-weight: 500;">FAQ</a>
+        </div>
+        <!-- Dropdown de Redes Sociais -->
+        <div style="margin-left: 1rem;">
+            <select onchange="window.location.href=this.value"
+                style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
+                <option value="" disabled selected>Filtrar por Rede Social</option>
+                <option value="dashboard_instagram.html">📸 Instagram</option>
+                <option value="dashboard_whatsapp.html">💬 WhatsApp</option>
+                <option value="dashboard_facebook.html">👤 Facebook</option>
+            </select>
+        </div>
+        <div class="user-info" style="margin-left: auto; display: flex; align-items: center; gap: 1rem;">
+            <button onclick="toggleDarkMode()" style="background:none; border:none; cursor:pointer; font-size: 1.2rem;"
+                title="Alternar Modo Escuro">🌓</button>
+            <span>Olá, <strong id="userName">Admin</strong></span>
+            <button onclick="logout()"
+                style="padding: 0.5rem 1rem; background: #ef4444; color: white; border: none; border-radius: 0.5rem; cursor: pointer;">Sair</button>
+        </div>
+    </header>
+
+    <!-- Container de Notificações -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Botão Flutuante para o Chat -->
+    <div onclick="toggleChat()" class="fab" title="Iniciar Atendimento"><img src="logo_vizo.svg" alt="Vizô"></div>
+
+    <!-- Widget do Chat -->
+    <div id="chatWidget" class="chat-widget">
+        <div class="chat-header-widget">
+            <strong>Atendimento Vizô</strong>
+            <button class="close-btn" onclick="toggleChat()">×</button>
+        </div>
+        <iframe src="chat.html" class="chat-frame" allow="microphone; autoplay"></iframe>
+    </div>
+
+    <div class="container">
+        <!-- Dashboard Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <div>
+                <h1 style="color: var(--secondary); margin: 0;">Painel de Controle</h1>
+                <p style="color: var(--gray);">Visão geral das métricas e atendimentos</p>
+            </div>
+            <button class="btn" onclick="window.location.href='leads.html'">
+                📋 Ver Leads Detalhados
+            </button>
+        </div>
+
+        <!-- Cards de Métricas (Melhorados Visualmente) -->
+        <div class="cards-grid">
+            <div class="card" style="position: relative; overflow: hidden; border-left: 4px solid var(--primary);">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <h3 style="margin: 0; font-size: 0.9rem; color: var(--gray);">Total de Conversas</h3>
+                        <div class="number" id="totalConversations" style="font-size: 2rem; margin: 0.5rem 0;">0</div>
+                    </div>
+                    <div
+                        style="background: rgba(46, 112, 206, 0.1); padding: 0.5rem; border-radius: 0.5rem; font-size: 1.5rem;">
+                        💬</div>
+                </div>
+                <div
+                    style="color: var(--success); font-size: 0.85rem; display: flex; align-items: center; gap: 0.25rem;">
+                    <span>▲ 12.5%</span> <span style="color: var(--gray); font-size: 0.75rem;">vs. semana passada</span>
+                </div>
+            </div>
+
+            <div class="card" style="position: relative; overflow: hidden; border-left: 4px solid var(--success);">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <h3 style="margin: 0; font-size: 0.9rem; color: var(--gray);">Leads Capturados</h3>
+                        <div class="number" id="leadsCaptured" style="font-size: 2rem; margin: 0.5rem 0;">0</div>
+                    </div>
+                    <div
+                        style="background: rgba(16, 185, 129, 0.1); padding: 0.5rem; border-radius: 0.5rem; font-size: 1.5rem;">
+                        👤</div>
+                </div>
+                <div
+                    style="color: var(--success); font-size: 0.85rem; display: flex; align-items: center; gap: 0.25rem;">
+                    <span>▲ 8.1%</span> <span style="color: var(--gray); font-size: 0.75rem;">novos hoje</span>
+                </div>
+            </div>
+
+            <div class="card" style="position: relative; overflow: hidden; border-left: 4px solid #f59e0b;">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <h3 style="margin: 0; font-size: 0.9rem; color: var(--gray);">Taxa de Conversão</h3>
+                        <div class="number" id="conversionRate" style="font-size: 2rem; margin: 0.5rem 0;">0%</div>
+                    </div>
+                    <div
+                        style="background: rgba(245, 158, 11, 0.1); padding: 0.5rem; border-radius: 0.5rem; font-size: 1.5rem;">
+                        📈</div>
+                </div>
+                <div style="color: var(--gray); font-size: 0.85rem;">Média de eficiência do bot</div>
+            </div>
+
+            <div class="card" style="position: relative; overflow: hidden; border-left: 4px solid #8b5cf6;">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <h3 style="margin: 0; font-size: 0.9rem; color: var(--gray);">Tempo Médio</h3>
+                        <div class="number" id="avgTime" style="font-size: 2rem; margin: 0.5rem 0;">0m</div>
+                    </div>
+                    <div
+                        style="background: rgba(139, 92, 246, 0.1); padding: 0.5rem; border-radius: 0.5rem; font-size: 1.5rem;">
+                        ⏱️</div>
+                </div>
+                <div style="color: var(--success); font-size: 0.85rem;">▼ -30s de otimização</div>
+            </div>
+        </div>
+
+        <!-- Seção de Auditoria e Logs -->
+        <div class="card" style="margin-top: 2rem;">
+            <h3>🛡️ Logs de Auditoria e Segurança</h3>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+                    <thead>
+                        <tr style="text-align: left; background-color: var(--bg);">
+                            <th style="padding: 0.75rem; border-bottom: 1px solid var(--border);">Data/Hora</th>
+                            <th style="padding: 0.75rem; border-bottom: 1px solid var(--border);">Usuário</th>
+                            <th style="padding: 0.75rem; border-bottom: 1px solid var(--border);">Ação</th>
+                            <th style="padding: 0.75rem; border-bottom: 1px solid var(--border);">IP Origem</th>
+                            <th style="padding: 0.75rem; border-bottom: 1px solid var(--border);">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="auditLogTable">
+                        <!-- Preenchido via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Charts Grid (Mantido) -->
+        <div class="charts-grid" style="margin-top: 2rem;">
+            <div class="card">
+                <h3>Evolução de Atendimentos (7 Dias)</h3>
+                <div class="chart-container">
+                    <canvas id="dailyChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <h3>Funil de Conversão</h3>
+                <div class="chart-container">
+                    <canvas id="funnelChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nova Seção: Origem e Tipos -->
+        <div class="charts-grid" style="margin-top: 2rem;">
+            <div class="card">
+                <h3>Origem dos Leads (Rastreamento)</h3>
+                <div class="chart-container">
+                    <canvas id="sourceChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <h3>Distribuição por Tipo</h3>
+                <div class="chart-container">
+                    <canvas id="typeChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção de Voz TucujuLabs -->
+        <h2 style="margin-top: 2rem; margin-bottom: 1rem; color: var(--secondary);">Configuração de Voz (IA Neural) 🎙️
+        </h2>
+        <div class="card" style="margin-bottom: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div>
+                    <h3 style="margin: 0; color: var(--text);">Controles TucujuLabs</h3>
+                    <p style="margin: 0.5rem 0 0 0; color: var(--gray); font-size: 0.9rem;">Gerencie a voz, estabilidade
+                        e estilo do assistente Vizô.</p>
+                </div>
+                <button onclick="window.location.href='dashboard_voices.html'" class="btn"
+                    style="background: var(--secondary); color: white; cursor: pointer; padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; font-weight: 600;">
+                    ⚙️ Gerenciar Voz
+                </button>
+            </div>
+
+            <div
+                style="background: var(--bg); padding: 1rem; border-radius: 0.5rem; color: var(--gray); font-size: 0.9rem;">
+                <p style="margin: 0;">As configurações de voz atuais estão sendo aplicadas ao atendimento automático e
+                    ao chat flutuante. Para alterar o modelo, a voz ou os parâmetros de entonação, clique no botão
+                    <strong>Gerenciar Voz</strong> acima.
+                </p>
+            </div>
+        </div>
+
+        <!-- Análise Avançada -->
+        <h2 style="margin-top: 2rem; margin-bottom: 1rem; color: var(--secondary);">Análise de Inteligência 🧠</h2>
+
+        <div class="charts-grid">
+            <!-- Mapa de Calor -->
+            <div class="card">
+                <h3>🔥 Mapa de Calor (Horários de Pico)</h3>
+                <div id="heatmapContainer" style="margin-top: 1rem; overflow-x: auto;">
+                    <!-- Tabela gerada via JS -->
+                </div>
+            </div>
+
+            <!-- Funil de Abandono (Churn) -->
+            <div class="card">
+                <h3>📉 Ponto de Abandono (Funil)</h3>
+                <div class="chart-container">
+                    <canvas id="churnChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-grid" style="margin-top: 1.5rem;">
+            <!-- Ecossistema Google (Sincronização Ativa) -->
+            <div class="card" style="border-top: 4px solid #4285F4;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3 style="margin: 0;">🌐 Google Workspace (Live)</h3>
+                    <span id="googleStatus" class="status-badge"
+                        style="background: #fee2e2; color: #991b1b;">Desconectado</span>
+                </div>
+
+                <div id="auth_controls" style="margin-bottom: 1rem;">
+                    <button id="authorize_button" onclick="handleAuthClick()" class="btn"
+                        style="background: #4285F4; width: 100%; display: none;">
+                        🔑 Autorizar Acesso Google
+                    </button>
+                    <button id="signout_button" onclick="handleSignoutClick()" class="btn"
+                        style="background: #ef4444; width: 100%; display: none;">
+                        🚪 Desconectar Google
+                    </button>
+                </div>
+
+                <div id="google_content" style="display: none;">
+                    <p style="font-size: 0.85rem; color: var(--gray); margin-bottom: 0.5rem;">📂 **Drive (Base de
+                        Conhecimento):**</p>
+                    <ul id="knowledgeList"
+                        style="list-style: none; padding: 0; font-size: 0.85rem; max-height: 150px; overflow-y: auto;">
+                        <li style="color: var(--gray);">Sincronizando...</li>
+                    </ul>
+
+                    <div
+                        style="border-top: 1px solid var(--border); margin-top: 1rem; padding-top: 1rem; display: flex; gap: 0.5rem;">
+                        <button onclick="triggerMorningReport()" class="btn"
+                            style="background: #10b981; font-size: 0.8rem; padding: 0.5rem 1rem; flex: 1;">
+                            📊 Relatório Sheets
+                        </button>
+                    </div>
+                </div>
+
+                <p id="api_key_msg" style="font-size: 0.7rem; color: #ef4444; margin-top: 0.5rem; display: none;">
+                    ⚠️ Insira a API KEY no código para habilitar.
+                </p>
+            </div>
+
+
+            <!-- Ranking de Especialistas -->
+            <div class="card">
+                <h3>🏆 Top Especialistas</h3>
+                <ul class="ranking-list" id="rankingList">
+                    <!-- JS preenche -->
+                </ul>
+            </div>
+        </div>
+
+        <!-- Tabela Leads Recentes -->
+        <div class="card" style="margin-top: 2rem;">
+            <h3>Últimos Leads (Ao Vivo)</h3>
+            <div style="overflow-x: auto;">
+                <table id="leadsTable">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Tipo</th>
+                            <th>Origem</th>
+                            <th>Horário</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Linhas geradas via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <script src="dashboard_data.js"></script>
+    <script>
+        function logout() {
+            sessionStorage.removeItem('vizô_auth');
+            window.location.href = 'login.html';
+        }
+
+        // Recupera nome do usuário
+        const user = sessionStorage.getItem('vizô_user');
+        if (user) {
+            document.getElementById('userName').textContent = user;
+        }
+
+        // Logs de Auditoria Mockados
+        const auditLogs = [
+            { date: '2026-02-13 14:32:01', user: 'Admin', action: 'Login no Sistema', ip: '192.168.1.10', status: 'Sucesso' },
+            { date: '2026-02-13 13:15:44', user: 'Sistema', action: 'Backup Automático', ip: 'Localhost', status: 'Sucesso' },
+            { date: '2026-02-13 11:20:12', user: 'Admin', action: 'Exportação de Leads (PDF)', ip: '192.168.1.10', status: 'Sucesso' },
+            { date: '2026-02-13 09:45:33', user: 'Desconhecido', action: 'Tentativa de Login Falha', ip: '189.23.45.12', status: 'Bloqueado' },
+            { date: '2026-02-13 08:00:00', user: 'Sistema', action: 'Inicialização do Bot', ip: 'Servidor', status: 'Sucesso' }
+        ];
+
+        function renderAuditLogs() {
+            const tbody = document.getElementById('auditLogTable');
+            tbody.innerHTML = auditLogs.map(log => `
+            <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 0.75rem;">${log.date}</td>
+                <td style="padding: 0.75rem;">${log.user}</td>
+                <td style="padding: 0.75rem;">${log.action}</td>
+                <td style="padding: 0.75rem;">${log.ip}</td>
+                <td style="padding: 0.75rem;">
+                    <span style="background: ${log.status === 'Sucesso' ? '#d1fae5' : '#fee2e2'}; 
+                                 color: ${log.status === 'Sucesso' ? '#065f46' : '#991b1b'}; 
+                                 padding: 0.25rem 0.5rem; 
+                                 border-radius: 9999px; 
+                                 font-size: 0.8rem;">
+                        ${log.status}
+                    </span>
+                </td>
+            </tr>
+        `).join('');
+        }
+
+        async function loadDashboardFromApi() {
+            try {
+                const res = await fetch('/api/dashboard/overview');
+                if (!res.ok) return;
+                const apiData = await res.json();
+                if (typeof dashboardData === 'undefined') {
+                    window.dashboardData = {};
+                }
+                if (!dashboardData.overview) dashboardData.overview = {};
+                if (!dashboardData.dailyPerformance) dashboardData.dailyPerformance = {};
+                if (!dashboardData.leadSources) dashboardData.leadSources = {};
+
+                if (apiData.overview) {
+                    dashboardData.overview = Object.assign({}, dashboardData.overview, apiData.overview);
+                }
+                if (apiData.dailyPerformance) {
+                    dashboardData.dailyPerformance = Object.assign({}, dashboardData.dailyPerformance, apiData.dailyPerformance);
+                }
+                if (apiData.leadSources) {
+                    dashboardData.leadSources = Object.assign({}, dashboardData.leadSources, apiData.leadSources);
+                }
+                if (apiData.recentLeads) {
+                    dashboardData.recentLeads = apiData.recentLeads;
+                }
+            } catch (e) {
+                console.error('Erro ao carregar dados reais do dashboard:', e);
+            }
+        }
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', async function () {
+            await loadDashboardFromApi();
+
+            if (typeof dashboardData !== 'undefined' && dashboardData.overview) {
+                animateValue('totalConversations', 0, dashboardData.overview.totalLeads || 0, 1500);
+                animateValue('leadsCaptured', 0, dashboardData.overview.conversions || 0, 1500);
+                document.getElementById('conversionRate').innerText = (dashboardData.overview.conversionRate || 0) + '%';
+                document.getElementById('avgTime').innerText = dashboardData.overview.avgHandleTime || '-';
+            }
+
+            renderAuditLogs();
+            renderCharts();
+            loadTable();
+        });
+
+        function animateValue(id, start, end, duration, suffix = "") {
+            const obj = document.getElementById(id);
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = Math.floor(progress * (end - start) + start) + suffix;
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        function renderCharts() {
+            // Gráfico Diário (Linha com Gradiente)
+            const ctxDaily = document.getElementById('dailyChart').getContext('2d');
+            const gradientDaily = ctxDaily.createLinearGradient(0, 0, 0, 400);
+            gradientDaily.addColorStop(0, 'rgba(46, 112, 206, 0.4)');
+            gradientDaily.addColorStop(1, 'rgba(46, 112, 206, 0)');
+
+            new Chart(ctxDaily, {
+                type: 'line',
+                data: {
+                    labels: dashboardData.dailyPerformance.labels,
+                    datasets: [{
+                        label: 'Conversas',
+                        data: dashboardData.dailyPerformance.leads,
+                        borderColor: '#2e70ce',
+                        backgroundColor: gradientDaily,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Gráfico de Funil (Barra Horizontal)
+            new Chart(document.getElementById('funnelChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Leads', 'Interações', 'Interesse', 'Agendados', 'Confirmados'],
+                    datasets: [{
+                        data: [
+                            dashboardData.funnel.leads,
+                            dashboardData.funnel.interactions,
+                            dashboardData.funnel.schedulingStarted,
+                            dashboardData.funnel.appointments,
+                            dashboardData.funnel.confirmed
+                        ],
+                        backgroundColor: ['#2e70ce', '#1d4ed8', '#1e40af', '#1e3a8a', '#10b981'],
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { x: { beginAtZero: true } }
+                }
+            });
+
+            // Gráfico de Origem (Donut)
+            new Chart(document.getElementById('sourceChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: dashboardData.leadSources.labels,
+                    datasets: [{
+                        data: dashboardData.leadSources.data,
+                        backgroundColor: dashboardData.leadSources.colors,
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } }
+                    }
+                }
+            });
+
+            // Gráfico de Tipos (Polar Area para variação visual)
+            new Chart(document.getElementById('typeChart'), {
+                type: 'polarArea',
+                data: {
+                    labels: dashboardData.requestTypes.labels,
+                    datasets: [{
+                        data: dashboardData.requestTypes.data,
+                        backgroundColor: ['#2e70ce', '#10b981', '#f59e0b', '#ef4444', '#6b7280'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } }
+                    },
+                    scales: {
+                        r: { ticks: { display: false }, grid: { color: 'rgba(0,0,0,0.05)' } }
+                    }
+                }
+            });
+
+            // Gráfico de Retenção (Churn) - Atualizado com Advanced Metrics
+            new Chart(document.getElementById('churnChart'), {
+                type: 'bar',
+                data: {
+                    labels: dashboardData.advancedMetrics.churn.labels,
+                    datasets: [{
+                        label: 'Retenção %',
+                        data: dashboardData.advancedMetrics.churn.data,
+                        backgroundColor: '#10b981',
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { min: 0, max: 100 } }
+                }
+            });
+
+            // Radar de Interesses
+            new Chart(document.getElementById('interestsChart'), {
+                type: 'radar',
+                data: {
+                    labels: dashboardData.advancedMetrics.interests.labels,
+                    datasets: [{
+                        label: 'Popularidade',
+                        data: dashboardData.advancedMetrics.interests.data,
+                        fill: true,
+                        backgroundColor: 'rgba(46, 112, 206, 0.2)',
+                        borderColor: '#2e70ce',
+                        pointBackgroundColor: '#2e70ce'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { r: { beginAtZero: true } }
+                }
+            });
+        }
+
+        function loadTable() {
+            const tbody = document.querySelector('#leadsTable tbody');
+            tbody.innerHTML = dashboardData.recentLeads.map(lead => `
+            <tr>
+                <td style="font-weight: 500;">${lead.name}</td>
+                <td>${lead.type}</td>
+                <td>
+                    <span style="display: flex; align-items: center; gap: 0.5rem;">
+                        ${lead.source === 'Instagram' ? '📸' : lead.source === 'WhatsApp' ? '💬' : lead.source === 'Facebook' ? '👤' : '🌐'}
+                        ${lead.source}
+                    </span>
+                </td>
+                <td style="color: var(--gray); font-size: 0.9rem;">${lead.time}</td>
+                <td><span class="status-badge status-${lead.status.replace(' ', '-')}">${lead.status}</span></td>
+            </tr>
+        `).join('');
+
+            // Preencher Heatmap com dados de dashboard_data.js
+            const heatmapContainer = document.getElementById('heatmapContainer');
+            const heatmapData = dashboardData.advancedMetrics.heatmap;
+            let heatmapHTML = '<table class="heatmap-table"><thead><tr><th>Hora</th>' +
+                heatmapData.days.map(d => `<th>${d}</th>`).join('') +
+                '</tr></thead><tbody>';
+
+            heatmapData.hours.forEach((hour, hIndex) => {
+                heatmapHTML += `<tr><td>${hour}</td>`;
+                heatmapData.days.forEach((day, dIndex) => {
+                    const value = heatmapData.data[dIndex][hIndex];
+                    // Cor baseada no valor real
+                    const opacity = Math.max(0.1, value / 100);
+                    const color = `rgba(46, 112, 206, ${opacity})`;
+                    heatmapHTML += `<td style="background-color: ${color}" class="heatmap-cell" title="${value} atendimentos"></td>`;
+                });
+                heatmapHTML += '</tr>';
+            });
+            heatmapHTML += '</tbody></table>';
+            heatmapContainer.innerHTML = heatmapHTML;
+
+            // Preencher Ranking com dados reais do objeto advancedMetrics
+            const rankingList = document.getElementById('rankingList');
+            rankingList.innerHTML = dashboardData.advancedMetrics.doctorRanking.map((spec, index) => `
+            <li class="ranking-item">
+                <div style="display: flex; align-items: center;">
+                    <span class="medal">${index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🎖️'}</span>
+                    <div style="display: flex; flex-direction: column;">
+                        <span style="font-weight: 500;">${spec.name}</span>
+                        <span style="font-size: 0.75rem; color: var(--gray);">⭐ ${spec.rating}</span>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-weight: bold; color: var(--primary);">${spec.count}</div>
+                    <div style="font-size: 0.7rem; color: var(--gray);">consultas</div>
+                </div>
+            </li>
+        `).join('');
+        }
+
+        // --- NOVAS VISUALIZAÇÕES AVANÇADAS ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Heatmap (Tabela Visual)
+            function renderHeatmap() {
+                const container = document.getElementById('heatmapContainer');
+                if (!dashboardData.advancedMetrics) return;
+                const data = dashboardData.advancedMetrics.heatmap;
+
+                let html = '<table class="heatmap-table"><thead><tr><th>Dia/Hora</th>';
+                data.hours.forEach(h => html += `<th>${h}</th>`);
+                html += '</tr></thead><tbody>';
+
+                data.days.forEach((day, i) => {
+                    html += `<tr><td><strong>${day}</strong></td>`;
+                    data.data[i].forEach(value => {
+                        // Gradiente de cor baseado no valor (0-100)
+                        const opacity = Math.max(0.1, value / 100);
+                        const color = `rgba(16, 185, 129, ${opacity})`;
+                        html += `<td style="background-color: ${color}" class="heatmap-cell" title="${value} atendimentos">${value}</td>`;
+                    });
+                    html += '</tr>';
+                });
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            }
+            renderHeatmap();
+
+            if (!dashboardData.advancedMetrics) return;
+
+            // 2. Churn Chart (Barra Horizontal)
+            new Chart(document.getElementById('churnChart'), {
+                type: 'bar',
+                data: {
+                    labels: dashboardData.advancedMetrics.churn.labels,
+                    datasets: [{
+                        label: 'Retenção (%)',
+                        data: dashboardData.advancedMetrics.churn.data,
+                        backgroundColor: '#f59e0b',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', // Barra horizontal
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { x: { min: 0, max: 100 } }
+                }
+            });
+
+            // 3. Nuvem de Interesses (Doughnut)
+            new Chart(document.getElementById('interestsChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: dashboardData.advancedMetrics.interests.labels,
+                    datasets: [{
+                        data: dashboardData.advancedMetrics.interests.data,
+                        backgroundColor: ['#2e70ce', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'right' } }
+                }
+            });
+
+            // 4. Ranking de Especialistas
+            const rankingList = document.getElementById('rankingList');
+            const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+
+            rankingList.innerHTML = dashboardData.advancedMetrics.doctorRanking.map((doc, index) => `
+             <li class="ranking-item">
+                 <div style="display: flex; align-items: center;">
+                     <span class="medal">${medals[index] || ''}</span>
+                     <div>
+                         <strong>${doc.name}</strong>
+                         <div style="font-size: 0.8rem; color: #6b7280;">⭐ ${doc.rating}</div>
+                     </div>
+                 </div>
+                 <div style="text-align: right">
+                     <strong>${doc.count}</strong>
+                     <div style="font-size: 0.7rem; color: #6b7280;">agendamentos</div>
+                 </div>
+             </li>
+         `).join('');
+        });
+
+        // --- CONFIGURAÇÕES GOOGLE (MODERNO GIS + GAPI) ---
+        const CLIENT_ID = '251022142557-sbihq73imloiagt2s3jvefs49fs4aq4p.apps.googleusercontent.com';
+        const API_KEY = 'AIzaSyBAxSP3eEb3vxg1tNe_cQtvZIo2LORBQoY'; // Chave de API inserida
+        const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest';
+        const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/drive.metadata.readonly';
+
+        let tokenClient;
+        let gapiInited = false;
+        let gisInited = false;
+
+        function gapiLoaded() {
+            gapi.load('client', intializeGapiClient);
+        }
+
+        async function intializeGapiClient() {
+            await gapi.client.init({
+                apiKey: API_KEY,
+                discoveryDocs: [DISCOVERY_DOC],
+            });
+            gapiInited = true;
+            maybeEnableButtons();
+        }
+
+        function gisLoaded() {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                callback: '', // definido no momento da autorização
+            });
+            gisInited = true;
+            maybeEnableButtons();
+        }
+
+        function maybeEnableButtons() {
+            if (gapiInited && gisInited) {
+                document.getElementById('authorize_button').style.display = 'block';
+                if (!API_KEY) document.getElementById('api_key_msg').style.display = 'block';
+            }
+        }
+
+        function handleAuthClick() {
+            tokenClient.callback = async (resp) => {
+                if (resp.error !== undefined) throw (resp);
+                document.getElementById('signout_button').style.display = 'block';
+                document.getElementById('authorize_button').innerText = '🔄 Re-autorizar';
+                document.getElementById('googleStatus').innerText = 'Conectado';
+                document.getElementById('googleStatus').style.background = '#d1fae5';
+                document.getElementById('googleStatus').style.color = '#065f46';
+                document.getElementById('google_content').style.display = 'block';
+                await fetchGoogleData(); // Puxa dados reais do Drive agora
+            };
+
+            if (gapi.client.getToken() === null) {
+                tokenClient.requestAccessToken({ prompt: 'consent' });
+            } else {
+                tokenClient.requestAccessToken({ prompt: '' });
+            }
+        }
+
+        function handleSignoutClick() {
+            const token = gapi.client.getToken();
+            if (token !== null) {
+                google.accounts.oauth2.revoke(token.access_token);
+                gapi.client.setToken('');
+                document.getElementById('googleStatus').innerText = 'Desconectado';
+                document.getElementById('googleStatus').style.background = '#fee2e2';
+                document.getElementById('google_content').style.display = 'none';
+                document.getElementById('signout_button').style.display = 'none';
+                document.getElementById('authorize_button').innerText = '🔑 Autorizar Acesso Google';
+            }
+        }
+
+        async function fetchGoogleData() {
+            try {
+                // Exemplo: Listar próximos 5 eventos do Calendário
+                const response = await gapi.client.calendar.events.list({
+                    'calendarId': 'primary',
+                    'timeMin': (new Date()).toISOString(),
+                    'showDeleted': false,
+                    'singleEvents': true,
+                    'maxResults': 5,
+                    'orderBy': 'startTime',
+                });
+                const events = response.result.items;
+                console.log('Eventos do Google:', events);
+
+                // Puxar arquivos do Drive (Simulado via backend por segurança de CORS)
+                const res = await fetch('/api/drive/knowledge');
+                const files = await res.json();
+                const list = document.getElementById('knowledgeList');
+                if (files && !files.error) {
+                    list.innerHTML = files.map(f => `
+                        <li style="margin-bottom: 0.4rem;">
+                            📄 <a href="${f.webViewLink}" target="_blank" style="text-decoration: none; color: var(--primary);">${f.name}</a>
+                        </li>
+                    `).join('');
+                } else {
+                    list.innerHTML = '<li>Arquivos prontos para sincronia.</li>';
+                }
+            } catch (e) {
+                console.error("Erro ao sincronizar Google:", e);
+            }
+        }
+
+        async function triggerMorningReport() {
+            const res = await fetch('/api/sheets/report');
+            const data = await res.json();
+            alert("Relatório de Atendimentos Realizado!\n\n" + data.report);
+        }
+
+
+        // Função para Abrir/Fechar Chat (inicializa Vizô apenas ao abrir)
+        let vizoChatInitialized = false;
+        function toggleChat() {
+            const widget = document.getElementById('chatWidget');
+            if (widget.style.display === 'flex') {
+                widget.style.display = 'none';
+            } else {
+                widget.style.display = 'flex';
+
+                if (!vizoChatInitialized) {
+                    vizoChatInitialized = true;
+                    try {
+                        const frame = widget.querySelector('.chat-frame');
+                        if (frame && frame.contentWindow && typeof frame.contentWindow.startVizo === 'function') {
+                            frame.contentWindow.startVizo();
+                        }
+                    } catch (e) {
+                        console.error('Erro ao iniciar Vizô no iframe:', e);
+                    }
+                }
+            }
+        }
+
+        // Dark Mode
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('vizo_theme', isDark ? 'dark' : 'light');
+        }
+
+        // Carregar tema salvo
+        if (localStorage.getItem('vizo_theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+
+        // Simulação de Notificação (Toast)
+        function showToast(message) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `✅ ${message}`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideInRight 0.3s reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        // Simular novos leads chegando aleatoriamente para teste
+        setInterval(() => {
+            if (Math.random() > 0.7) { // 30% de chance a cada 10s
+                const names = ['Maria S.', 'João P.', 'Ana C.', 'Pedro L.'];
+                const randomName = names[Math.floor(Math.random() * names.length)];
+                showToast(`Novo agendamento: ${randomName}`);
+            }
+        }, 10000);
+    </script>
+</body>
+
+</html>

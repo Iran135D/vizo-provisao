@@ -1,0 +1,14 @@
+{
+    "provider": "edge_tts",
+    "voice_id": "pt-BR-AntonioNeural",
+    "model_id": "eleven_multilingual_v2",
+    "stability": 0.5,
+    "similarity_boost": 0.75,
+    "style": 0,
+    "use_speaker_boost": true,
+    "edge_rate": "+20%",
+    "edge_pitch": "+0Hz",
+    "voice_id_pt": "pt-BR-AntonioNeural",
+    "voice_id_fr": "fr-FR-DeniseNeural",
+    "premium_fr_enabled": false
+}

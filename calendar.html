@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda - Vizô Analytics</title>
+    <style>
+        :root {
+            --primary: #2e70ce;
+            --secondary: #0b2447;
+            --success: #10b981;
+            --bg: #f3f4f6;
+            --card: #ffffff;
+            --text: #1f2937;
+            --border: #e5e7eb;
+            --gray: #6b7280;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: var(--card);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+        }
+
+        .logo{display:flex;align-items:center;gap:8px;font-size:1.3rem;font-weight:bold;color:var(--secondary);cursor:pointer}
+        .logo img{height:28px;width:auto;display:block}
+
+        .nav-links {
+            margin-left: 2rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: var(--gray);
+            font-weight: 500;
+        }
+
+        .nav-link.active {
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .container {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1rem;
+            background: var(--card);
+            padding: 1rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .day-header {
+            text-align: center;
+            font-weight: bold;
+            color: var(--secondary);
+            padding: 0.5rem;
+        }
+
+        .day-cell {
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            min-height: 120px;
+            padding: 0.5rem;
+            background: #fafafa;
+        }
+
+        .day-number {
+            font-weight: bold;
+            color: var(--gray);
+            margin-bottom: 0.5rem;
+        }
+
+        .event {
+            background-color: #dbeafe;
+            color: #1e40af;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.8rem;
+            margin-bottom: 0.25rem;
+            cursor: pointer;
+        }
+
+        .event.surgery {
+            background-color: #fce7f3;
+            color: #9d174d;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo" onclick="window.location.href='index.html'"><img src="logo_vizo.svg" alt="Vizô"><span>Vizô Analytics</span></div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">Dashboard</a>
+            <a href="#" class="nav-link active">Agenda</a>
+            <a href="leads.html" class="nav-link">Leads Capturados</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <h2 style="color: var(--secondary); margin-bottom: 1.5rem;">Agenda Semanal - Fevereiro 2026</h2>
+        
+        <div class="calendar-grid">
+            <div class="day-header">Dom</div>
+            <div class="day-header">Seg</div>
+            <div class="day-header">Ter</div>
+            <div class="day-header">Qua</div>
+            <div class="day-header">Qui</div>
+            <div class="day-header">Sex</div>
+            <div class="day-header">Sáb</div>
+
+            <!-- Semana de exemplo -->
+            <div class="day-cell"><div class="day-number">08</div></div>
+            <div class="day-cell">
+                <div class="day-number">09</div>
+                <div class="event">09:00 - Maria S. (Consulta)</div>
+                <div class="event">14:30 - João P. (Retorno)</div>
+            </div>
+            <div class="day-cell">
+                <div class="day-number">10</div>
+                <div class="event surgery">08:00 - Cirurgia Catarata</div>
+                <div class="event">15:00 - Ana C. (Exame)</div>
+            </div>
+            <div class="day-cell">
+                <div class="day-number">11</div>
+                <div class="event">10:15 - Pedro L. (Lentes)</div>
+            </div>
+            <div class="day-cell">
+                <div class="day-number">12</div>
+                <div class="event">11:00 - Marcos A. (Urgência)</div>
+                <div class="event surgery">14:00 - Cirurgia Refrativa</div>
+            </div>
+            <div class="day-cell">
+                <div class="day-number">13</div>
+                <div class="event">09:30 - Reunião Clínica</div>
+            </div>
+            <div class="day-cell"><div class="day-number">14</div></div>
+        </div>
+    </div>
+</body>
+</html>

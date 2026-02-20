@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vizô Dashboard - Configuração de Voz Híbrida</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2e70ce;
+            --secondary: #0b2447;
+            --success: #10b981;
+            --bg: #f3f4f6;
+            --card: #ffffff;
+            --text: #1f2937;
+            --gray: #6b7280;
+            --border: #e5e7eb;
+        }
+
+        body.dark-mode {
+            --bg: #111827;
+            --card: #1f2937;
+            --text: #f9fafb;
+            --gray: #9ca3af;
+            --border: #374151;
+            --secondary: #3b82f6;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .logo{display:flex;align-items:center;gap:8px;font-size:1.3rem;font-weight:700;color:var(--primary)}
+        .logo img{height:28px;width:auto;display:block}
+
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-outline-secondary {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--gray);
+        }
+
+        .btn-outline-secondary:hover {
+            background: rgba(148, 163, 184, 0.12);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        select,
+        input[type="text"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 1rem;
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 2000;
+        }
+
+        .toast {
+            background: white;
+            color: #1f2937;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 0.5rem;
+            border-left: 4px solid var(--success);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            animation: slideInRight 0.3s ease-out;
+            min-width: 300px;
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.75);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1500;
+        }
+
+        .modal-card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 1.5rem 1.75rem;
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.5);
+            max-width: 480px;
+            width: 100%;
+        }
+
+        .modal-summary {
+            margin-top: 1rem;
+            margin-bottom: 1.5rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            padding: 0.75rem 1rem;
+            font-size: 0.9rem;
+            color: var(--gray);
+        }
+
+        .modal-summary div {
+            margin-bottom: 0.25rem;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .provider-option {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .provider-option:hover {
+            border-color: var(--primary);
+            background: #f8fafc;
+        }
+
+        .provider-option.selected {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+
+        .provider-option input[type="radio"] {
+            width: 20px;
+            height: 20px;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="logo"><img src="logo_vizo.svg" alt="Vizô"><span>Vizô Analytics</span></div>
+        <div class="nav-links" style="display: flex; gap: 1rem; margin-left: 2rem;">
+            <a href="index.html" class="nav-link" style="text-decoration: none; color: var(--gray);">Dashboard</a>
+            <a href="#" class="nav-link active"
+                style="text-decoration: none; font-weight: bold; color: var(--primary);">Configuração de Voz</a>
+        </div>
+        <div class="user-info" style="margin-left: auto; display: flex; align-items: center; gap: 1rem;">
+            <button onclick="toggleDarkMode()" style="background:none; border:none; cursor:pointer; font-size: 1.2rem;"
+                title="Alternar Modo Escuro">🌓</button>
+            <span>Olá, <strong id="userName">Admin</strong></span>
+        </div>
+    </header>
+
+    <div id="toastContainer" class="toast-container"></div>
+
+    <div id="confirmModal" class="modal-backdrop">
+        <div class="modal-card">
+            <h2 style="margin: 0 0 0.25rem 0; font-size: 1.2rem; color: var(--secondary);">
+                Confirmar configuração de voz
+            </h2>
+            <p style="margin: 0; font-size: 0.9rem; color: var(--gray);">
+                Confira as vozes selecionadas antes de aplicar no Vizô.
+            </p>
+            <div id="confirmSummary" class="modal-summary"></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline-secondary" onclick="closeConfirmModal()">Cancelar</button>
+                <button class="btn btn-success" onclick="confirmSaveSettings()">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <div>
+                <h1 style="color: var(--secondary); margin: 0;">Configuração de Voz Híbrida 🎙️</h1>
+                <p style="color: var(--gray);">Gerencie a qualidade da voz e economize créditos</p>
+            </div>
+            <div style="display:flex; gap: 10px;">
+            <button class="btn" onclick="activateDefaultVoiceMode()">
+                🔄 Modo Padrão
+            </button>
+            <button class="btn btn-success" onclick="openConfirmModal()">
+                💾 Salvar Configurações
+            </button>
+            </div>
+        </div>
+
+        <!-- Seletor de Provedor -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <h3 style="margin-top: 0; color: var(--secondary); margin-bottom: 1rem;">Escolha o Provedor de Voz</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                
+                <label class="provider-option" id="providerOptionEdge" onclick="selectProvider('edge_tts')">
+                    <input type="radio" name="provider" value="edge_tts" id="radioEdge">
+                    <div>
+                        <div style="font-weight: bold; font-size: 1.2rem; color: var(--secondary);">Plano Básico de Áudio</div>
+                        <div style="font-size: 0.9rem; color: var(--success); margin-top: 0.25rem;">
+                            Alta Qualidade Neural
+                        </div>
+                    </div>
+                </label>
+
+                <label class="provider-option" id="providerOptionEleven" onclick="selectProvider('elevenlabs')">
+                    <input type="radio" name="provider" value="elevenlabs" id="radioEleven">
+                    <div>
+                        <div style="font-weight: bold; font-size: 1.2rem; color: var(--secondary);">Plano Premium</div>
+                        <div style="font-size: 0.9rem; color: var(--primary); margin-top: 0.25rem;">
+                            Clonagem e Ultra-realismo
+                        </div>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <div class="card">
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
+                <div>
+                    <h3 style="margin: 0; color: var(--text);" id="settingsTitle">Configurações de Voz</h3>
+                    <p style="margin: 0.5rem 0 0 0; color: var(--gray); font-size: 0.9rem;">Ajuste a voz do assistente</p>
+                </div>
+                <div style="text-align: right;">
+                    <span class="status-badge" id="providerBadge"
+                        style="background: #d1fae5; color: #065f46; padding: 4px 12px; border-radius: 12px; font-size: 0.9rem; font-weight: bold;">
+                        Modo Básico Ativo
+                    </span>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 3rem;">
+
+                <!-- Coluna Esquerda: Voz e Modelo -->
+                <div>
+                    <div style="margin-bottom: 1.5rem;">
+                        <label
+                            style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--secondary);">Idioma 01 • Português</label>
+                        <select id="voiceSelectPt" onchange="updateVoicePreviewLabel('pt')">
+                            <option value="" disabled selected>Carregando vozes...</option>
+                        </select>
+                    </div>
+
+                    <div id="voiceFrGroup" style="margin-bottom: 1.5rem;">
+                        <label
+                            style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--secondary);">Idioma 02 • Francês</label>
+                        <select id="voiceSelectFr" onchange="updateVoicePreviewLabel('fr')">
+                            <option value="" disabled selected>Carregando vozes...</option>
+                        </select>
+                        <p style="font-size: 0.85rem; color: var(--gray); margin-top: 0.5rem;" id="voiceDesc">
+                            Idioma 02 • Francês disponível para testes de voz no modo Premium. No momento, o uso em produção no chat permanece desativado.
+                        </p>
+                        <div id="frPremiumToggleRow" style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--gray); display:none;">
+                            <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                                <input type="checkbox" id="frPremiumToggle" style="width:16px;height:16px;">
+                                <span>Ativar Francês (Premium) para este ambiente</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;" id="modelSelectGroup">
+                        <label
+                            style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--secondary);">Modelo IA</label>
+                        <select id="modelSelect">
+                            <option value="eleven_multilingual_v2">Multilingual v2 (Melhor para PT-BR)</option>
+                            <option value="eleven_monolingual_v1">Monolingual v1 (Inglês)</option>
+                            <option value="eleven_turbo_v2">Turbo v2 (Rápido)</option>
+                        </select>
+                    </div>
+
+                    <!-- Preview Section -->
+                    <div style="background: var(--bg); padding: 1.5rem; border-radius: 8px;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--secondary);">Teste a Voz</label>
+                        <textarea id="previewText" rows="3"
+                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem; margin-bottom: 1rem; resize: vertical;">Olá! Eu sou o Vizô, seu assistente virtual. Como posso ajudar?</textarea>
+                        
+                        <button id="previewBtn" onclick="playVoicePreview()" class="btn btn-primary"
+                            style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                            <span>▶</span> Gerar Preview
+                        </button>
+                        <audio id="audioPlayer" controls style="width: 100%; margin-top: 1rem; display: none;"></audio>
+                    </div>
+                </div>
+
+                <!-- Coluna Direita: Sliders (Apenas ElevenLabs) -->
+                <div id="elevenLabsControls" style="display: none;">
+                    <!-- Stability -->
+                    <div style="margin-bottom: 2rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <label style="font-weight: 600; color: var(--secondary);">Stability</label>
+                            <span id="stabilityVal" style="font-weight: bold; color: var(--primary);">0.50</span>
+                        </div>
+                        <input type="range" id="stabilityRange" min="0" max="1" step="0.01" value="0.50"
+                            oninput="updateRangeVal('stabilityVal', this.value)">
+                        <div
+                            style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--gray); margin-top: 0.25rem;">
+                            <span>Mais Variável (Emotivo)</span>
+                            <span>Mais Estável (Consistente)</span>
+                        </div>
+                    </div>
+
+                    <!-- Similarity -->
+                    <div style="margin-bottom: 2rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <label style="font-weight: 600; color: var(--secondary);">Similarity Boost</label>
+                            <span id="similarityVal" style="font-weight: bold; color: var(--primary);">0.75</span>
+                        </div>
+                        <input type="range" id="similarityRange" min="0" max="1" step="0.01" value="0.75"
+                            oninput="updateRangeVal('similarityVal', this.value)">
+                        <div
+                            style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--gray); margin-top: 0.25rem;">
+                            <span>Baixo</span>
+                            <span>Alto (Fiel à voz original)</span>
+                        </div>
+                    </div>
+
+                    <!-- Style Exaggeration -->
+                    <div style="margin-bottom: 2rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <label style="font-weight: 600; color: var(--secondary);">Style Exaggeration</label>
+                            <span id="styleVal" style="font-weight: bold; color: var(--primary);">0.00</span>
+                        </div>
+                        <input type="range" id="styleRange" min="0" max="1" step="0.01" value="0.00"
+                            oninput="updateRangeVal('styleVal', this.value)">
+                        <div
+                            style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--gray); margin-top: 0.25rem;">
+                            <span>Nenhum</span>
+                            <span>Exagerado</span>
+                        </div>
+                    </div>
+
+                    <!-- Speaker Boost -->
+                    <div style="margin-top: 2rem; padding: 1rem; background: #e0e7ff; border-radius: 8px; display: flex; align-items: center; gap: 1rem;">
+                        <input type="checkbox" id="speakerBoostCheck" checked style="width: 20px; height: 20px;">
+                        <div>
+                            <label for="speakerBoostCheck" style="font-weight: 600; color: var(--secondary); display: block;">Speaker Boost</label>
+                            <span style="font-size: 0.85rem; color: var(--gray);">Aumenta a clareza e volume (pode aumentar latência)</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Info Edge TTS (quando selecionado) -->
+                <div id="edgeTtsControls" style="display: none;">
+                    <div style="text-align: center; padding: 2rem; background: #f0fdf4; border-radius: 12px; border: 1px dashed #16a34a; margin-bottom: 2rem;">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">🌱</div>
+                        <h3 style="color: #166534; margin: 0 0 1rem 0;">Modo Econômico Ativado</h3>
+                        <ul style="text-align: left; margin-top: 1.5rem; color: #15803d; line-height: 1.6;">
+                            <li>✅ Sem limite de caracteres</li>
+                            <li>✅ Alta qualidade (Neural)</li>
+                        </ul>
+                    </div>
+
+                    <!-- Rate -->
+                    <div style="margin-bottom: 2rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <label style="font-weight: 600; color: var(--secondary);">Velocidade (Rate)</label>
+                            <span id="edgeRateVal" style="font-weight: bold; color: var(--primary);">+0%</span>
+                        </div>
+                        <input type="range" id="edgeRateRange" min="-50" max="50" step="5" value="0"
+                            oninput="updateEdgeVal('edgeRateVal', this.value, '%')">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--gray);">
+                            <span>Lento</span>
+                            <span>Rápido</span>
+                        </div>
+                    </div>
+
+                    <!-- Pitch -->
+                    <div style="margin-bottom: 2rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <label style="font-weight: 600; color: var(--secondary);">Tom (Pitch)</label>
+                            <span id="edgePitchVal" style="font-weight: bold; color: var(--primary);">+0Hz</span>
+                        </div>
+                        <input type="range" id="edgePitchRange" min="-50" max="50" step="5" value="0"
+                            oninput="updateEdgeVal('edgePitchVal', this.value, 'Hz')">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--gray);">
+                            <span>Grave</span>
+                            <span>Agudo</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <h2 style="margin-top: 2rem; margin-bottom: 1rem; color: var(--secondary);">Controles de Engajamento 📢</h2>
+        <div class="card" style="margin-bottom: 2rem;">
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <div style="padding: 1.5rem; background: var(--bg); border-radius: 0.5rem; border: 1px solid var(--border);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <div>
+                            <h3 style="margin: 0; color: var(--text);">Campanha Sazonal Ativa</h3>
+                            <p style="margin: 0.5rem 0 0 0; color: var(--gray); font-size: 0.9rem;">
+                                Define uma mensagem prioritária que o Vizô pode mencionar durante o atendimento.
+                            </p>
+                        </div>
+                        <label class="switch" style="position: relative; display: inline-block; width: 60px; height: 34px;">
+                            <input type="checkbox" id="campaignActive">
+                            <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px;"></span>
+                        </label>
+                        <style>
+                            .switch input { opacity: 0; width: 0; height: 0; }
+                            .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+                            input:checked + .slider { background-color: var(--success); }
+                            input:checked + .slider:before { transform: translateX(26px); }
+                        </style>
+                    </div>
+                    <div style="margin-top: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Mensagem da Campanha:</label>
+                        <textarea id="campaignMessage" rows="3" style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; border: 1px solid var(--border); background: white; color: var(--text); font-family: inherit;" placeholder="Ex: Mês da Saúde Ocular: 20% de desconto em check-up completo..."></textarea>
+                    </div>
+                </div>
+
+                <div style="padding: 1.5rem; background: var(--bg); border-radius: 0.5rem; border: 1px solid var(--border);">
+                    <h3 style="margin: 0 0 1rem 0; color: var(--text);">Nível de Proatividade do Bot</h3>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span style="font-size: 1.5rem;">🤖</span>
+                        <input type="range" id="botProactivity" min="0" max="100" value="50" style="flex: 1; accent-color: var(--primary);" oninput="document.getElementById('proactivityValue').innerText = this.value + '%'">
+                        <span id="proactivityValue" style="font-weight: bold; width: 40px; text-align: right;">50%</span>
+                    </div>
+                    <p style="margin-top: 0.5rem; color: var(--gray); font-size: 0.85rem;">
+                        Define com que frequência o Vizô tentará engajar o usuário com perguntas ou ofertas (0% = Apenas responde, 100% = Vendedor agressivo).
+                    </p>
+                </div>
+
+                <div style="text-align: right;">
+                    <button onclick="saveCampaignSettings()" class="btn" style="background: var(--primary); color: white; padding: 0.75rem 2rem; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer;">
+                        💾 Salvar Alterações
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allVoices = [];
+        let currentProvider = 'edge_tts';
+        let currentPreviewLang = 'pt';
+        let premiumFrEnabled = false;
+        let isQdSynSuperUser = false;
+        const defaultPreviewPt = "Olá! Eu sou o Vizô, seu assistente virtual. Como posso ajudar?";
+        const defaultPreviewFr = "Bonjour ! Je suis Vizô, votre assistant virtuel. Comment puis-je vous aider ?";
+
+        // Carregar Vozes e Configurações ao Iniciar
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const user = sessionStorage.getItem('vizô_user') || '';
+                isQdSynSuperUser = user.toUpperCase() === 'QD SYN';
+            } catch (e) {
+                isQdSynSuperUser = false;
+            }
+
+            await loadVoices();
+            await loadSettings();
+
+            // Dark Mode Check
+            if (localStorage.getItem('vizo_theme') === 'dark') {
+                document.body.classList.add('dark-mode');
+            }
+        });
+
+        async function loadVoices() {
+            try {
+                const response = await fetch('/api/voices');
+                allVoices = await response.json();
+                updateVoiceDropdown(); // Inicializa com o provider atual
+            } catch (error) {
+                console.error('Erro ao carregar vozes:', error);
+                showToast('Erro ao carregar lista de vozes', 'error');
+            }
+        }
+
+        function resolveVoiceMeta(voice) {
+            const id = String(voice.voice_id || "");
+            const rawName = String(voice.name || "");
+            const lowerName = rawName.toLowerCase();
+            let idioma = "";
+            let idiomaLabel = "";
+            if (id.indexOf("pt-BR") !== -1 || id.indexOf("pt-PT") !== -1) {
+                idioma = "pt";
+                idiomaLabel = "Português";
+            } else if (id.indexOf("fr-FR") !== -1) {
+                idioma = "fr";
+                idiomaLabel = "Francês";
+            } else if (id.indexOf("en-US") !== -1) {
+                idioma = "en";
+                idiomaLabel = "Inglês";
+            } else {
+                idiomaLabel = "Multilíngue";
+            }
+            let gender = "";
+            if (
+                id.indexOf("FranciscaNeural") !== -1 ||
+                id.indexOf("RaquelNeural") !== -1 ||
+                id.indexOf("DeniseNeural") !== -1 ||
+                id.indexOf("JennyNeural") !== -1
+            ) {
+                gender = "Feminina";
+            } else if (
+                id.indexOf("AntonioNeural") !== -1 ||
+                id.indexOf("DuarteNeural") !== -1 ||
+                id.indexOf("HenriNeural") !== -1 ||
+                id.indexOf("GuyNeural") !== -1
+            ) {
+                gender = "Masculina";
+            } else {
+                const femaleNames = ["bella", "domi", "elli", "rachel", "jenny"];
+                const maleNames = ["george", "adam", "antoni", "arnold", "josh", "sam", "guy"];
+                if (femaleNames.some(n => lowerName.indexOf(n) !== -1)) {
+                    gender = "Feminina";
+                } else if (maleNames.some(n => lowerName.indexOf(n) !== -1)) {
+                    gender = "Masculina";
+                }
+            }
+            return { idioma, idiomaLabel, gender };
+        }
+
+        function selectProvider(provider) {
+            currentProvider = provider;
+            
+            // UI Updates
+            document.querySelectorAll('.provider-option').forEach(el => el.classList.remove('selected'));
+            document.getElementById('radioEdge').checked = false;
+            document.getElementById('radioEleven').checked = false;
+
+            const frGroup = document.getElementById('voiceFrGroup');
+
+            if (provider === 'edge_tts') {
+                if (frGroup) frGroup.style.display = 'none';
+                document.getElementById('providerOptionEdge').classList.add('selected');
+                document.getElementById('radioEdge').checked = true;
+                
+                document.getElementById('elevenLabsControls').style.display = 'none';
+                document.getElementById('modelSelectGroup').style.display = 'none';
+                document.getElementById('edgeTtsControls').style.display = 'block';
+                
+                document.getElementById('providerBadge').innerText = "Modo Básico Ativo";
+                document.getElementById('providerBadge').style.background = "#d1fae5";
+                document.getElementById('providerBadge').style.color = "#065f46";
+
+            } else {
+                if (frGroup) frGroup.style.display = 'block';
+                document.getElementById('providerOptionEleven').classList.add('selected');
+                document.getElementById('radioEleven').checked = true;
+                
+                document.getElementById('elevenLabsControls').style.display = 'block';
+                document.getElementById('modelSelectGroup').style.display = 'block';
+                document.getElementById('edgeTtsControls').style.display = 'none';
+                
+                const premiumLocked = allVoices.filter(v => v.provider === 'elevenlabs').every(v => v.locked);
+                if (premiumLocked) {
+                    document.getElementById('providerBadge').innerText = "Modo Premium Bloqueado";
+                    document.getElementById('providerBadge').style.background = "#fee2e2";
+                    document.getElementById('providerBadge').style.color = "#991b1b";
+                } else {
+                    document.getElementById('providerBadge').innerText = "Modo Premium Ativo";
+                    document.getElementById('providerBadge').style.background = "#dbeafe";
+                    document.getElementById('providerBadge').style.color = "#1e3a8a";
+                }
+            }
+
+            updateVoiceDropdown();
+        }
+
+        function populateLanguageSelect(selectId, idiomaTarget) {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+            select.innerHTML = '';
+
+            let filteredVoices = [];
+            if (currentProvider === 'edge_tts') {
+                filteredVoices = allVoices.filter(v => v.provider === 'edge_tts');
+            } else {
+                filteredVoices = allVoices.filter(v => v.provider === 'elevenlabs');
+            }
+
+            const candidates = [];
+            filteredVoices.forEach(voice => {
+                let meta = resolveVoiceMeta(voice);
+                if (currentProvider === 'elevenlabs' && idiomaTarget === 'fr') {
+                    meta.idioma = 'fr';
+                    meta.idiomaLabel = 'Francês';
+                    candidates.push({ voice, meta });
+                } else if (meta.idioma === idiomaTarget) {
+                    candidates.push({ voice, meta });
+                }
+            });
+
+            if (!candidates.length) {
+                const opt = document.createElement('option');
+                opt.value = '';
+                opt.disabled = true;
+                opt.selected = true;
+                opt.text = 'Nenhuma voz disponível para este idioma';
+                select.appendChild(opt);
+                return;
+            }
+
+            const baseLabel = idiomaTarget === 'fr' ? 'Idioma 02 • Francês' : 'Idioma 01 • Português';
+
+            candidates.forEach(item => {
+                const voice = item.voice;
+                const meta = item.meta;
+                const option = document.createElement('option');
+                option.value = voice.voice_id;
+
+                let genderLabel = '';
+                if (meta.gender) {
+                    genderLabel = ' • Voz ' + meta.gender;
+                }
+                const tierLabel = currentProvider === 'edge_tts' ? ' • Básica' : ' • Premium';
+
+                option.text = (voice.locked ? '🔒 ' : '') + baseLabel + genderLabel + tierLabel;
+                option.dataset.idioma = idiomaTarget;
+                option.dataset.gender = meta.gender || '';
+                option.dataset.locked = voice.locked ? 'true' : 'false';
+                if (voice.locked) option.disabled = true;
+                select.appendChild(option);
+            });
+        }
+
+        function updateVoiceDropdown() {
+            populateLanguageSelect('voiceSelectPt', 'pt');
+            populateLanguageSelect('voiceSelectFr', 'fr');
+            updateVoicePreviewLabel();
+        }
+
+        async function loadSettings() {
+            try {
+                const response = await fetch('/api/settings');
+                const settings = await response.json();
+
+                // Set Provider
+                const provider = settings.provider || 'edge_tts';
+                selectProvider(provider);
+
+                premiumFrEnabled = !!settings.premium_fr_enabled;
+
+                setTimeout(() => {
+                    const selectPt = document.getElementById('voiceSelectPt');
+                    const selectFr = document.getElementById('voiceSelectFr');
+
+                    if (selectPt) {
+                        const desiredPt = settings.voice_id_pt || settings.voice_id || '';
+                        if (desiredPt) {
+                            const existsPt = [...selectPt.options].some(o => o.value === desiredPt);
+                            if (existsPt) {
+                                selectPt.value = desiredPt;
+                            }
+                        }
+                    }
+
+                    if (selectFr) {
+                        const desiredFr = settings.voice_id_fr || '';
+                        if (desiredFr) {
+                            const existsFr = [...selectFr.options].some(o => o.value === desiredFr);
+                            if (existsFr) {
+                                selectFr.value = desiredFr;
+                            }
+                        }
+                    
+                        selectFr.disabled = false;
+                    }
+
+                    updateVoicePreviewLabel();
+                }, 100);
+
+                document.getElementById('modelSelect').value = settings.model_id || 'eleven_multilingual_v2';
+                document.getElementById('stabilityRange').value = settings.stability ?? 0.5;
+                updateRangeVal('stabilityVal', settings.stability ?? 0.5);
+                document.getElementById('similarityRange').value = settings.similarity_boost ?? 0.75;
+                updateRangeVal('similarityVal', settings.similarity_boost ?? 0.75);
+                document.getElementById('styleRange').value = settings.style ?? 0.0;
+                updateRangeVal('styleVal', settings.style ?? 0.0);
+                document.getElementById('speakerBoostCheck').checked = settings.use_speaker_boost ?? true;
+
+                // Edge Settings
+                const edgeRate = parseInt(settings.edge_rate) || 0;
+                document.getElementById('edgeRateRange').value = edgeRate;
+                updateEdgeVal('edgeRateVal', edgeRate, '%');
+
+                const edgePitch = parseInt(settings.edge_pitch) || 0;
+                document.getElementById('edgePitchRange').value = edgePitch;
+                updateEdgeVal('edgePitchVal', edgePitch, 'Hz');
+
+                const frNotice = document.getElementById('voiceDesc');
+                if (frNotice) {
+                    if (premiumFrEnabled) {
+                        frNotice.textContent = "Idioma 02 • Francês liberado para este ambiente (Premium).";
+                    } else {
+                        frNotice.textContent = "Idioma 02 • Francês é um recurso Premium. Liberação somente pelo super usuário QD Synapse.";
+                    }
+                }
+
+                const frToggleRow = document.getElementById('frPremiumToggleRow');
+                const frToggle = document.getElementById('frPremiumToggle');
+                if (frToggle) {
+                    frToggle.checked = premiumFrEnabled;
+                }
+                if (frToggleRow) {
+                    frToggleRow.style.display = isQdSynSuperUser ? 'block' : 'none';
+                }
+
+            } catch (error) {
+                console.error('Erro ao carregar configurações:', error);
+            }
+        }
+
+        async function saveSettings() {
+            const frToggle = document.getElementById('frPremiumToggle');
+            const premiumFlag = frToggle ? frToggle.checked : premiumFrEnabled;
+            premiumFrEnabled = premiumFlag;
+
+            const settings = {
+                provider: currentProvider,
+                voice_id_pt: document.getElementById('voiceSelectPt').value,
+                voice_id_fr: document.getElementById('voiceSelectFr').value,
+                voice_id: document.getElementById('voiceSelectPt').value || document.getElementById('voiceSelectFr').value,
+                model_id: document.getElementById('modelSelect').value,
+                stability: parseFloat(document.getElementById('stabilityRange').value),
+                similarity_boost: parseFloat(document.getElementById('similarityRange').value),
+                style: parseFloat(document.getElementById('styleRange').value),
+                use_speaker_boost: document.getElementById('speakerBoostCheck').checked,
+                edge_rate: (parseInt(document.getElementById('edgeRateRange').value) >= 0 ? '+' : '') + document.getElementById('edgeRateRange').value + '%',
+                edge_pitch: (parseInt(document.getElementById('edgePitchRange').value) >= 0 ? '+' : '') + document.getElementById('edgePitchRange').value + 'Hz',
+                premium_fr_enabled: premiumFlag
+            };
+
+            try {
+                const response = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                });
+
+                if (response.ok) {
+                    showToast('Voz salva e aplicada no Chat ✅', 'success');
+                    try {
+                        // Opcional: validação rápida de aplicação no backend
+                        await fetch('/api/settings');
+                    } catch (_) {}
+                } else {
+                    showToast('Erro ao salvar configurações', 'error');
+                }
+            } catch (error) {
+                showToast('Erro de conexão', 'error');
+            }
+        }
+
+        function buildConfirmSummary() {
+            const container = document.getElementById('confirmSummary');
+            if (!container) return;
+            const selectPt = document.getElementById('voiceSelectPt');
+            const selectFr = document.getElementById('voiceSelectFr');
+            const providerLabel = currentProvider === 'edge_tts'
+                ? 'Plano Básico (Edge TTS)'
+                : 'Plano Premium (ElevenLabs)';
+
+            let ptLabel = 'Não selecionada';
+            let frLabel = 'Não selecionada';
+
+            if (selectPt && selectPt.value && selectPt.selectedIndex >= 0) {
+                ptLabel = selectPt.options[selectPt.selectedIndex].text;
+            }
+
+            if (selectFr && selectFr.value && selectFr.selectedIndex >= 0) {
+                frLabel = selectFr.options[selectFr.selectedIndex].text;
+            }
+
+            let html = `<div><strong>Provedor:</strong> ${providerLabel}</div>` +
+                `<div><strong>Português:</strong> ${ptLabel}</div>`;
+
+            if (currentProvider !== 'edge_tts') {
+                html += `<div><strong>Francês:</strong> ${frLabel}</div>`;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function openConfirmModal() {
+            buildConfirmSummary();
+            const modal = document.getElementById('confirmModal');
+            if (modal) {
+                modal.style.display = 'flex';
+            }
+        }
+
+        function closeConfirmModal() {
+            const modal = document.getElementById('confirmModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        function confirmSaveSettings() {
+            saveSettings();
+            closeConfirmModal();
+        }
+
+        function activateDefaultVoiceMode() {
+            currentProvider = 'edge_tts';
+            selectProvider('edge_tts');
+            setTimeout(() => {
+                const edgeVoices = allVoices.filter(v => v.provider === 'edge_tts');
+                const selectPt = document.getElementById('voiceSelectPt');
+                const selectFr = document.getElementById('voiceSelectFr');
+
+                const ptVoices = edgeVoices.filter(v => resolveVoiceMeta(v).idioma === 'pt');
+                const frVoices = edgeVoices.filter(v => resolveVoiceMeta(v).idioma === 'fr');
+
+                let chosenPt = ptVoices.find(v => v.voice_id === 'pt-BR-FranciscaNeural') || ptVoices[0] || edgeVoices[0];
+                let chosenFr = frVoices.find(v => v.voice_id === 'fr-FR-DeniseNeural') || frVoices[0] || edgeVoices[0];
+
+                if (selectPt && chosenPt) selectPt.value = chosenPt.voice_id;
+                if (selectFr && chosenFr) selectFr.value = chosenFr.voice_id;
+
+                document.getElementById('modelSelect').value = 'eleven_multilingual_v2';
+                document.getElementById('stabilityRange').value = 0.5;
+                updateRangeVal('stabilityVal', 0.5);
+                document.getElementById('similarityRange').value = 0.75;
+                updateRangeVal('similarityVal', 0.75);
+                document.getElementById('styleRange').value = 0.0;
+                updateRangeVal('styleVal', 0.0);
+                document.getElementById('speakerBoostCheck').checked = true;
+                document.getElementById('edgeRateRange').value = 0;
+                updateEdgeVal('edgeRateVal', 0, '%');
+                document.getElementById('edgePitchRange').value = 0;
+                updateEdgeVal('edgePitchVal', 0, 'Hz');
+                updateVoicePreviewLabel();
+                saveSettings();
+            }, 50);
+        }
+
+        function normalizeBrandPronunciation(text) {
+            if (!text) return "";
+            return String(text).replace(/qd synapse inova ltda\.?/gi, 'Quê Dê Sinapse Inova Limitada')
+                               .replace(/qd\s+synapse\s+inova\s+ltda/gi, 'Quê Dê Sinapse Inova Limitada');
+        }
+
+        async function playVoicePreview() {
+            const btn = document.getElementById('previewBtn');
+            const originalText = btn.innerHTML;
+            const audioPlayer = document.getElementById('audioPlayer');
+
+            const previewTextEl = document.getElementById('previewText');
+            const previewVal = previewTextEl ? previewTextEl.value || '' : '';
+            const finalText = normalizeBrandPronunciation(previewVal);
+            const select = document.getElementById(currentPreviewLang === 'fr' ? 'voiceSelectFr' : 'voiceSelectPt');
+            const selectedOpt = select ? select.options[select.selectedIndex] : null;
+            if (selectedOpt && selectedOpt.dataset.locked === 'true') {
+                showToast('Voz do Plano Premium bloqueada. Faça upgrade para desbloquear.', 'error');
+                return;
+            }
+
+            btn.innerHTML = '⏳ Gerando Áudio...';
+            btn.disabled = true;
+
+            const payload = {
+                text: finalText,
+                provider: currentProvider,
+                voice_id: select ? select.value : '',
+                model_id: document.getElementById('modelSelect').value,
+                stability: parseFloat(document.getElementById('stabilityRange').value),
+                similarity_boost: parseFloat(document.getElementById('similarityRange').value),
+                style: parseFloat(document.getElementById('styleRange').value),
+                use_speaker_boost: document.getElementById('speakerBoostCheck').checked,
+                edge_rate: (parseInt(document.getElementById('edgeRateRange').value) >= 0 ? '+' : '') + document.getElementById('edgeRateRange').value + '%',
+                edge_pitch: (parseInt(document.getElementById('edgePitchRange').value) >= 0 ? '+' : '') + document.getElementById('edgePitchRange').value + 'Hz'
+            };
+
+            try {
+                const response = await fetch('/api/preview', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    audioPlayer.src = url;
+                    audioPlayer.style.display = 'block';
+                    audioPlayer.play();
+                    showToast('Preview gerado com sucesso!', 'success');
+                    
+                    // Check headers for fallback
+                    if (response.headers.get('X-Viz-Fallback')) {
+                         showToast('Aviso: Usando modo básico (Fallback)', 'success');
+                    }
+                } else {
+                    const errData = await response.json();
+                    showToast(errData.error || 'Erro ao gerar preview', 'error');
+                }
+            } catch (error) {
+                console.error(error);
+                showToast('Erro de conexão', 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        function updateRangeVal(id, val) {
+            document.getElementById(id).textContent = parseFloat(val).toFixed(2);
+        }
+
+        function updateEdgeVal(id, val, unit) {
+            const sign = val >= 0 ? '+' : '';
+            document.getElementById(id).textContent = `${sign}${val}${unit}`;
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('vizo_theme', isDark ? 'dark' : 'light');
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.style.borderLeftColor = type === 'success' ? 'var(--success)' : '#ef4444';
+            toast.innerHTML = `<span>${type === 'success' ? '✅' : '❌'}</span> <div><strong>${message}</strong></div>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), type === 'error' ? 6000 : 3000);
+        }
+
+        // Controles de Engajamento
+        document.addEventListener('DOMContentLoaded', loadCampaignSettings);
+
+        async function loadCampaignSettings() {
+            try {
+                const response = await fetch('/api/campaigns');
+                const settings = await response.json();
+
+                if (settings) {
+                    const activeEl = document.getElementById('campaignActive');
+                    const msgEl = document.getElementById('campaignMessage');
+                    const proactEl = document.getElementById('botProactivity');
+                    const valueEl = document.getElementById('proactivityValue');
+                    if (activeEl) activeEl.checked = settings.active_campaign || false;
+                    if (msgEl) msgEl.value = settings.campaign_message || '';
+                    if (proactEl) proactEl.value = settings.bot_proactivity || 50;
+                    if (valueEl) valueEl.innerText = (settings.bot_proactivity || 50) + '%';
+                }
+            } catch (error) {
+                console.error('Erro ao carregar configurações de campanha:', error);
+                showToast('Erro ao carregar configurações de campanha.', 'error');
+            }
+        }
+
+        async function saveCampaignSettings() {
+            const payload = {
+                active_campaign: document.getElementById('campaignActive').checked,
+                campaign_message: document.getElementById('campaignMessage').value,
+                bot_proactivity: parseInt(document.getElementById('botProactivity').value, 10) || 50
+            };
+
+            try {
+                const response = await fetch('/api/campaigns', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    showToast('Configurações de campanha salvas com sucesso!', 'success');
+                } else {
+                    showToast('Erro ao salvar configurações de campanha.', 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao salvar configurações de campanha:', error);
+                showToast('Erro de conexão ao salvar configurações de campanha.', 'error');
+            }
+        }
+
+        function updateVoicePreviewLabel(langChanged) {
+            const desc = document.getElementById('voiceDesc');
+            const selectPt = document.getElementById('voiceSelectPt');
+            const selectFr = document.getElementById('voiceSelectFr');
+
+            if (langChanged === 'pt' || langChanged === 'fr') {
+                currentPreviewLang = langChanged;
+            }
+
+            const parts = [];
+
+            if (selectPt && selectPt.value) {
+                const optPt = selectPt.options[selectPt.selectedIndex];
+                const genderPt = optPt ? optPt.dataset.gender : '';
+                let msgPt = 'Idioma 01: Português';
+                if (genderPt) {
+                    msgPt += genderPt === 'Feminina' ? ' • voz feminina' : ' • voz masculina';
+                }
+                parts.push(msgPt);
+            }
+
+            if (selectFr && selectFr.value) {
+                const optFr = selectFr.options[selectFr.selectedIndex];
+                const genderFr = optFr ? optFr.dataset.gender : '';
+                let msgFr = 'Idioma 02: Francês';
+                if (genderFr) {
+                    msgFr += genderFr === 'Feminina' ? ' • voz feminina' : ' • voz masculina';
+                }
+                parts.push(msgFr);
+            }
+
+            if (desc) {
+                desc.textContent = parts.length ? parts.join(' | ') : 'Selecione as vozes para o Vizô.';
+            }
+
+            const preview = document.getElementById('previewText');
+            if (preview) {
+                const current = preview.value.trim();
+                const knownDefaults = [defaultPreviewPt.trim(), defaultPreviewFr.trim()];
+                if (!current || knownDefaults.indexOf(current) !== -1) {
+                    if (currentPreviewLang === 'fr') {
+                        preview.value = defaultPreviewFr;
+                    } else {
+                        preview.value = defaultPreviewPt;
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>

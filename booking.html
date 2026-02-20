@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agendar Consulta</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin:0; background:#0b1220; color:#e5e7eb; }
+    .wrap { max-width: 520px; margin: 32px auto; background: #0f172a; border:1px solid #1f2937; border-radius: 12px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,.4); }
+    h1 { margin: 0 0 8px; font-size: 1.4rem; }
+    .doc { color:#93c5fd; margin-bottom: 16px; }
+    .row { display: flex; gap: 12px; }
+    label { display:block; font-size:.85rem; color:#9ca3af; margin-bottom:6px; }
+    input, select { width:100%; padding:10px 12px; border-radius:8px; background:#0b1020; border:1px solid #334155; color:#e5e7eb; }
+    button { background:#2563eb; color:#fff; border:none; padding:10px 14px; border-radius:8px; font-weight:600; cursor:pointer; }
+    .actions { display:flex; gap:10px; justify-content:flex-end; margin-top:16px; }
+    .msg { margin-top:16px; padding:12px; border-radius:8px; border:1px solid #334155; display:none; }
+    .msg.ok { border-color:#10b981; color:#10b981; }
+    .msg.err { border-color:#f87171; color:#f87171; }
+    a.link { color:#93c5fd; word-break: break-all; }
+  </style>
+  <script>
+    function getParam(name){
+      const url = new URL(window.location.href);
+      return url.searchParams.get(name);
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+      const doctor = getParam('doctor');
+      const title = document.getElementById('docTitle');
+      const doctorInput = document.getElementById('doctor');
+      if (doctor) {
+        title.textContent = doctor;
+        doctorInput.value = doctor;
+      }
+
+      document.getElementById('frm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(e.target).entries());
+        const msg = document.getElementById('msg');
+        msg.style.display = 'none';
+        try {
+          const r = await fetch('/api/calendar/book', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+          const j = await r.json();
+          if (j.status === 'success') {
+            msg.className = 'msg ok';
+            msg.innerHTML = 'Agendamento confirmado! Abra o evento em: <br><a class="link" target="_blank" href="'+j.link+'">'+j.link+'</a><br>Data: '+j.date_formatted+' — Hora: '+j.time_formatted;
+            msg.style.display = 'block';
+          } else {
+            throw new Error(j.message || 'Falha ao agendar');
+          }
+        } catch (err) {
+          msg.className = 'msg err';
+          msg.textContent = 'Erro: '+ err.message;
+          msg.style.display = 'block';
+        }
+      });
+    });
+  </script>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Agendar consulta com</h1>
+    <div class="doc" id="docTitle">Especialista</div>
+    <form id="frm">
+      <input type="hidden" id="doctor" name="doctor" value="" />
+      <div>
+        <label>Nome completo</label>
+        <input required name="name" placeholder="Ex.: Maria Silva" />
+      </div>
+      <div>
+        <label>WhatsApp (com DDD)</label>
+        <input required name="phone" placeholder="Ex.: 96999999999" />
+      </div>
+      <div class="row">
+        <div style="flex:1">
+          <label>Data</label>
+          <input required type="date" name="date" />
+        </div>
+        <div style="flex:1">
+          <label>Hora</label>
+          <input required type="time" name="time" />
+        </div>
+      </div>
+      <div class="actions">
+        <button type="submit">Agendar</button>
+      </div>
+      <div class="msg" id="msg"></div>
+    </form>
+  </div>
+</body>
+</html>
+

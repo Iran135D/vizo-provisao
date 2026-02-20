@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QD Synapse Inova Ltda. – Vizô</title>
+    <style>
+        :root {
+            --primary: #1e40af;
+            --secondary: #0f172a;
+            --accent: #22c55e;
+            --bg: #0b1120;
+            --card: #020617;
+            --text: #e5e7eb;
+            --muted: #9ca3af;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top, #1e293b 0, #020617 55%);
+            color: var(--text);
+        }
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 40;
+            backdrop-filter: blur(16px);
+            background: rgba(15, 23, 42, 0.9);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+        }
+        .nav-inner {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .brand {
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+        .menu-toggle {
+            display: none;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            margin-left: 1rem;
+        }
+        .menu-line {
+            display: block;
+            width: 26px;
+            height: 3px;
+            margin-bottom: 5px;
+            background: var(--muted);
+        }
+        .menu-line:last-child {
+            margin-bottom: 0;
+        }
+        nav a {
+            color: var(--muted);
+            text-decoration: none;
+            margin-left: 1.25rem;
+            font-size: 0.9rem;
+            position: relative;
+        }
+        nav a:hover {
+            color: var(--text);
+        }
+        nav a::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: -0.25rem;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(to right, var(--primary), var(--accent));
+            transition: width 0.2s ease;
+        }
+        nav a:hover::after {
+            width: 100%;
+        }
+
+        nav a.cta-link {
+            padding: 0.4rem 0.95rem;
+            border-radius: 999px;
+            background: linear-gradient(135deg, var(--primary), #4f46e5);
+            color: #f9fafb;
+            border: 1px solid rgba(129, 140, 248, 0.6);
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.35);
+        }
+
+        nav a.cta-link::after {
+            display: none;
+        }
+
+        nav a.cta-link:hover {
+            filter: brightness(1.05);
+        }
+        .hero {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 6.5rem 1.5rem 4rem;
+            display: grid;
+            grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+            gap: 2.5rem;
+            align-items: center;
+        }
+        .hero h1 {
+            font-size: clamp(2.4rem, 4vw, 3rem);
+            margin-bottom: 1rem;
+        }
+        .hero p {
+            color: var(--muted);
+            font-size: 0.98rem;
+            line-height: 1.7;
+        }
+        .hero-buttons {
+            margin-top: 1.75rem;
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .btn-primary {
+            padding: 0.75rem 1.4rem;
+            border-radius: 999px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, var(--primary), #4f46e5);
+            box-shadow: 0 18px 40px rgba(37, 99, 235, 0.35);
+        }
+        .btn-outline {
+            padding: 0.75rem 1.3rem;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.6);
+            cursor: pointer;
+            font-size: 0.95rem;
+            color: var(--text);
+            background: transparent;
+        }
+        .placeholder-box {
+            border-radius: 1rem;
+            background: radial-gradient(circle at top left, #1e293b, #020617);
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            min-height: 220px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            background-color: transparent;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.75);
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+        .section {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 2.5rem 1.5rem;
+        }
+        .section h2 {
+            font-size: 1.6rem;
+            margin-bottom: 0.75rem;
+        }
+        .section p {
+            color: var(--muted);
+            font-size: 0.98rem;
+            line-height: 1.7;
+            max-width: 720px;
+        }
+        .cards-grid {
+            margin-top: 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 1.5rem;
+        }
+        .card {
+            background: rgba(15, 23, 42, 0.9);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        .card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.12), transparent 55%);
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+        .card:hover::before {
+            opacity: 1;
+        }
+        .card h3 {
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+        .card p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.92rem;
+            line-height: 1.6;
+        }
+        footer {
+            border-top: 1px solid rgba(148, 163, 184, 0.3);
+            padding: 1.5rem;
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.85rem;
+            background: #020617;
+            margin-top: 3rem;
+        }
+        /* FAB & chat widget (copiados do dashboard para manter o mesmo comportamento) */
+        .fab {
+            position: fixed;
+            right: 1.5rem;
+            bottom: 1.5rem;
+            width: 56px;
+            height: 56px;
+            border-radius: 999px;
+            background: #0f172a;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 50;
+        }
+        .fab img {
+            width: 36px;
+            height: 36px;
+        }
+        .chat-widget {
+            position: fixed;
+            right: 1.5rem;
+            bottom: 5.5rem;
+            width: 360px;
+            max-width: 100%;
+            height: 520px;
+            display: none;
+            flex-direction: column;
+            background: #020617;
+            border-radius: 1rem;
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.9);
+            overflow: hidden;
+            z-index: 50;
+        }
+        .chat-header-widget {
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #111827;
+            border-bottom: 1px solid rgba(31, 41, 55, 0.9);
+        }
+        .chat-header-widget strong {
+            font-size: 0.95rem;
+        }
+        .chat-header-widget .close-btn {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            font-size: 1.1rem;
+        }
+        .chat-frame {
+            border: none;
+            flex: 1;
+            width: 100%;
+        }
+        @media (max-width: 768px) {
+            .hero {
+                grid-template-columns: minmax(0, 1fr);
+                padding-top: 5.5rem;
+            }
+            .menu-toggle {
+                display: inline-block;
+            }
+            nav {
+                display: none;
+                position: absolute;
+                top: 100%;
+                right: 1.5rem;
+                margin-top: 0.5rem;
+                padding: 0.75rem 1rem;
+                background: #020617;
+                border-radius: 0.75rem;
+                box-shadow: 0 18px 40px rgba(15, 23, 42, 0.85);
+            }
+            nav.is-open {
+                display: block;
+            }
+            nav a {
+                display: block;
+                margin: 0.25rem 0;
+            }
+            .chat-widget {
+                left: 50%;
+                right: auto;
+                bottom: 1.5rem;
+                width: min(360px, 95vw);
+                transform: translateX(-50%);
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="nav-inner">
+            <div class="brand">QD SYNAPSE INOVA LTDA.</div>
+            <button class="menu-toggle" id="vizo-menu-toggle" aria-label="Abrir menu">
+                <span class="menu-line"></span>
+                <span class="menu-line"></span>
+                <span class="menu-line"></span>
+            </button>
+            <nav id="vizo-nav">
+                <a href="/index.html">Início</a>
+                <a href="#sobre">Vizô</a>
+                <a href="#servicos">Resultados</a>
+                <a href="#contato">Fale com a QD</a>
+                <a href="index.html" class="cta-link">Vizô por dentro</a>
+            </nav>
+        </div>
+    </header>
+
+    <main id="inicio">
+        <section class="hero">
+            <div>
+                <h1>Vizô: IA de atendimento e vendas 24h para o seu negócio.</h1>
+                <p>
+                    O Vizô é o agente inteligente desenvolvido pela QD Synapse Inova Ltda. para
+                    transformar conversas em leads, agendamentos e oportunidades reais, com visão
+                    completa de métricas em tempo real.
+                </p>
+                <p>
+                    Aqui você vê o Vizô em ação e já pode falar diretamente com nossa equipe
+                    comercial para levar a solução para sua clínica ou empresa.
+                </p>
+                <div class="hero-buttons">
+                    <button class="btn-primary" onclick="contatarQDSynapse()">Falar com a QD Synapse</button>
+                </div>
+            </div>
+            <div class="placeholder-box">
+                QD SYNAPSE INOVA
+            </div>
+        </section>
+
+        <section class="section" id="sobre">
+            <h2>O que é o Vizô</h2>
+            <p>
+                O Vizô é um agente conversacional de alto desempenho que atende seus pacientes ou
+                clientes 24 horas por dia, capta dados, qualifica oportunidades e encaminha tudo
+                para a sua equipe com visão gerencial em tempo real.
+            </p>
+            <p>
+                A QD Synapse Inova Ltda. cuida de toda a jornada: da estratégia de engajamento,
+                à configuração de fluxos de conversa, integrações e leitura de métricas – sempre
+                com foco em aumento de conversões e produtividade.
+            </p>
+            <div class="cards-grid">
+                <div class="card">
+                    <h3>Atendimento 24h guiado</h3>
+                    <p>
+                        Recepção profissional, roteiros inteligentes e coleta estruturada de dados,
+                        sem sobrecarregar a sua equipe humana.
+                    </p>
+                </div>
+                <div class="card">
+                    <h3>Visão de dados e métricas</h3>
+                    <p>
+                        Painéis como o Vizô Analytics mostram em tempo real leads, agendamentos,
+                        funis de conversão e canais que mais geram resultado.
+                    </p>
+                </div>
+                <div class="card">
+                    <h3>Projeto conduzido pela QD Synapse</h3>
+                    <p>
+                        Implementação assistida, testes em ambiente seguro e acompanhamento contínuo,
+                        sempre com ponto de contato direto com nossa equipe.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="servicos">
+            <h2>Como o Vizô gera resultados</h2>
+            <p>
+                O Vizô combina inteligência artificial de linguagem, voz e visão de dados para
+                transformar acessos ao seu site, campanhas e redes sociais em contatos qualificados
+                e agendamentos efetivos.
+            </p>
+            <div class="cards-grid">
+                <div class="card">
+                    <h3>1. Engajamento nas campanhas</h3>
+                    <p>
+                        Integração com links e anúncios para identificar de onde vem cada lead e
+                        ajustar o atendimento de acordo com o interesse declarado.
+                    </p>
+                </div>
+                <div class="card">
+                    <h3>2. Conversa que leva à ação</h3>
+                    <p>
+                        Fluxos guiados para coleta de nome, contato, interesse e agendamento, com
+                        possibilidade de transferência fluida para atendentes humanos.
+                    </p>
+                </div>
+                <div class="card">
+                    <h3>3. Análise e decisão</h3>
+                    <p>
+                        Dashboards que mostram volume, taxa de conversão, horários de pico e
+                        desempenho por canal – tudo para apoiar decisões comerciais e de marketing.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="contato">
+            <h2>Fale com a QD Synapse sobre o Vizô</h2>
+            <p>
+                Quer levar o Vizô para o seu negócio ou saber como adaptar o agente aos seus
+                processos? Fale diretamente com a QD Synapse Inova Ltda. pelos canais abaixo.
+            </p>
+            <p>
+                Telefone/WhatsApp: <a href="https://wa.me/5596991512552?text=Ol%C3%A1%2C%20vim%20pelo%20site%20e%20quero%20saber%20mais%20sobre%20o%20Viz%C3%B4."
+                    style="color: #22c55e; text-decoration: none;">(96) 99151-2552</a><br>
+                Site: <a href="https://qdsynapse.com.br" target="_blank" rel="noopener"
+                    style="color: #38bdf8; text-decoration: none;">qdsynapse.com.br</a><br>
+                E-mail: <a href="mailto:qdsynapse@qdsynapse.com.br"
+                    style="color: #e5e7eb; text-decoration: none;">qdsynapse@qdsynapse.com.br</a>
+            </p>
+            <div class="hero-buttons" style="margin-top: 1.5rem;">
+                <button class="btn-primary" onclick="contatarQDSynapse()">Falar agora pelo WhatsApp</button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Botão flutuante do chat Vizô -->
+    <div onclick="toggleChat()" class="fab" title="Iniciar Atendimento Vizô">
+        <img src="logo_vizo.svg" alt="Vizô">
+    </div>
+
+    <!-- Widget do Chat Vizô -->
+    <div id="chatWidget" class="chat-widget">
+        <div class="chat-header-widget">
+            <strong>Atendimento Vizô</strong>
+            <button class="close-btn" onclick="toggleChat()">×</button>
+        </div>
+        <iframe src="chat.html?context=comercial" class="chat-frame" allow="microphone; autoplay"></iframe>
+    </div>
+
+    <footer>
+        QD Synapse Inova Ltda. • Vizô – IA de atendimento e vendas 24h • Contato comercial: (96) 99151-2552 • qdsynapse@qdsynapse.com.br
+    </footer>
+
+    <script>
+        let vizoChatInitialized = false;
+        function toggleChat() {
+            const widget = document.getElementById('chatWidget');
+            if (widget.style.display === 'flex') {
+                widget.style.display = 'none';
+            } else {
+                widget.style.display = 'flex';
+                if (!vizoChatInitialized) {
+                    vizoChatInitialized = true;
+                    try {
+                        const frame = widget.querySelector('.chat-frame');
+                        if (frame && frame.contentWindow && typeof frame.contentWindow.startVizo === 'function') {
+                            frame.contentWindow.startVizo();
+                        }
+                    } catch (e) {
+                        console.error('Erro ao iniciar Vizô no iframe:', e);
+                    }
+                }
+            }
+        }
+
+        const vizoMenuToggle = document.getElementById('vizo-menu-toggle');
+        const vizoNav = document.getElementById('vizo-nav');
+        if (vizoMenuToggle && vizoNav) {
+            vizoMenuToggle.addEventListener('click', () => {
+                vizoNav.classList.toggle('is-open');
+            });
+        }
+        function contatarQDSynapse() {
+            const url = "https://wa.me/5596991512552?text=Ol%C3%A1%2C%20vim%20pelo%20site%20qdsynapse.com.br%20e%20quero%20saber%20mais%20sobre%20o%20Viz%C3%B4.";
+            window.open(url, "_blank");
+        }
+    </script>
+</body>
+</html>

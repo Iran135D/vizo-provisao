@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FAQ — Vizô</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary:#2e70ce; --secondary:#0b2447; --bg:#f3f4f6; --card:#ffffff; --text:#1f2937; --gray:#6b7280; --border:#e5e7eb;
+    }
+    body{margin:0; font-family: Inter,system-ui,Arial; background:var(--bg); color:var(--text);}
+    header{display:flex; align-items:center; gap:1rem; padding:1rem 2rem; background:var(--card); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10;}
+    header .logo{display:flex; align-items:center; gap:.5rem; font-weight:700; color:var(--secondary);}
+    header .logo img{width:28px; height:28px;}
+    header .nav{margin-left:auto; display:flex; gap:.75rem}
+    header .nav a{color:var(--secondary); text-decoration:none; font-weight:600; border:1px solid var(--border); padding:.5rem .75rem; border-radius:.5rem}
+    .container{max-width:900px; margin:2rem auto; padding:0 1rem}
+    h1{margin:0 0 .25rem 0; color:var(--secondary)}
+    .subtitle{color:var(--gray); margin:0 0 1.5rem 0}
+    details{background:var(--card); border:1px solid var(--border); border-radius:.75rem; padding:1rem 1.25rem; margin:0 0 .75rem 0}
+    summary{font-weight:600; cursor:pointer}
+    .muted{color:var(--gray); font-size:.95rem}
+    .cta{margin:2rem 0; display:flex; gap:.75rem; flex-wrap:wrap}
+    .btn{background:var(--primary); color:#fff; border:none; padding:.65rem 1rem; border-radius:.5rem; cursor:pointer}
+    .btn-outline{background:#fff; color:var(--secondary); border:1px solid var(--border)}
+    footer{color:var(--gray); text-align:center; padding:2rem 1rem}
+    code{background:#f7fafc; border:1px solid #e2e8f0; padding:.1rem .35rem; border-radius:.35rem}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo"><img src="logo_vizo.svg" alt="Vizô"><span>Vizô</span></div>
+    <div class="nav">
+      <a href="index.html">Dashboard</a>
+      <a href="chat.html">Abrir Chat</a>
+    </div>
+  </header>
+  <div class="container">
+    <h1>FAQ — Vizô</h1>
+    <p class="subtitle">Base de conhecimento rápida para usuários e gestores</p>
+
+    <details open>
+      <summary>O que é o Vizô?</summary>
+      <p>O Vizô é uma IA de vendas e atendimento 24h desenvolvida pela QD Synapse Inova Ltda. Ele recepciona, qualifica e encaminha clientes de forma consistente, reduzindo filas e aumentando a conversão.</p>
+    </details>
+
+    <details>
+      <summary>Como funciona o modo comercial?</summary>
+      <p>O Vizô inicia sempre em modo comercial, apresentando um roteiro guiado que vai do primeiro contato até o agendamento ou geração de lead. Esse comportamento é padronizado e não depende de parâmetros de URL.</p>
+    </details>
+
+    <details>
+      <summary>Quais dados o Vizô coleta?</summary>
+      <p>Nome e WhatsApp são priorizados para retorno. Outros identificadores podem ser solicitados conforme a necessidade do negócio. Os dados são utilizados apenas para atendimento e métricas internas.</p>
+    </details>
+
+    <details>
+      <summary>Posso falar por voz?</summary>
+      <p>Sim. O chat suporta entrada por texto e por áudio. A voz também atende como recurso de acessibilidade para usuários com dificuldade de leitura.</p>
+    </details>
+
+    <details>
+      <summary>Quando o atendimento é transferido para um humano?</summary>
+      <p>Em dúvidas específicas, pedidos complexos ou quando o usuário solicita. O Vizô direciona a conversa para um atendente humano sem perder o histórico.</p>
+    </details>
+
+    <details>
+      <summary>O que é o Vizô Analytics?</summary>
+      <p>É o painel de gestão que exibe métricas em tempo real: volume de conversas, taxa de conversão em leads/agendamentos e caminhos de maior resultado.</p>
+    </details>
+
+    <details>
+      <summary>O Vizô é exclusivo da Pró‑Visão?</summary>
+      <p>O exemplo público está configurado para a Pró‑Visão Saúde Ocular, mas a tecnologia é da QD Synapse Inova Ltda. e pode ser adaptada a outros segmentos.</p>
+    </details>
+
+    <details>
+      <summary>Quais são os próximos passos de evolução?</summary>
+      <p>Mais persuasão para aumentar conversão, campanhas de reativação, triagem por voz/vídeo e integrações profundas com ERP e prontuário.</p>
+    </details>
+
+    <div class="cta">
+      <button class="btn" onclick="location.href='chat.html'">Abrir demonstração</button>
+      <button class="btn btn-outline" onclick="location.href='index.html'">Voltar ao Dashboard</button>
+    </div>
+
+    <p class="muted">Dúvidas adicionais? Acesse o botão Informações no cabeçalho do chat para ver privacidade, direitos e manual de uso.</p>
+  </div>
+  <footer>© QD Synapse Inova Ltda. — Vizô</footer>
+</body>
+</html>

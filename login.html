@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acesso Restrito - Vizô Admin</title>
+    <style>
+        :root {
+            --primary-color: #2e70ce;
+            --secondary-color: #0b2447;
+            --success-color: #10b981;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-color: #1f2937;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .login-container {
+            background-color: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        .logo-img {
+            max-width: 132px;
+            height: auto;
+            display: block;
+            margin: 0 auto 1rem auto;
+            image-rendering: -webkit-optimize-contrast;
+        }
+
+        h1 {
+            color: var(--secondary-color);
+            margin-bottom: 0.5rem;
+            font-size: 1.5rem;
+        }
+
+        p {
+            color: #6b7280;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
+        input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(46, 112, 206, 0.1);
+        }
+
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #1d4ed8;
+        }
+
+        .error-message {
+            color: #ef4444;
+            font-size: 0.875rem;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .footer {
+            margin-top: 2rem;
+            font-size: 0.75rem;
+            color: #9ca3af;
+        }
+        .alt-actions {
+            margin-top: 1rem;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .link-btn {
+            background: transparent;
+            border: 1px solid #d1d5db;
+            color: var(--secondary-color);
+            border-radius: 0.5rem;
+            padding: 0.6rem 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+        .link-btn:hover { background: #f9fafb; }
+        .modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); }
+        .modal-card { width: 100%; max-width: 380px; background: #fff; padding: 1.5rem; border-radius: 1rem; }
+        .modal .actions { display: flex; gap: 10px; margin-top: 12px; }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <img src="logo_vizo.svg" alt="Vizô - Pró-Visão" class="logo-img" onerror="this.style.display='none';document.getElementById('fallbackEmoji').style.display='block'">
+        <div class="logo" id="fallbackEmoji" style="display:none;">👁️</div>
+        <h1>Vizô Admin</h1>
+        <p>Acesso restrito à gestão de atendimentos</p>
+
+        <form id="loginForm">
+            <div class="input-group">
+                <label for="username">Usuário</label>
+                <input type="text" id="username" placeholder="Digite seu usuário" required>
+            </div>
+            <div class="input-group">
+                <label for="password">Senha</label>
+                <div style="position: relative;">
+                    <input type="password" id="password" placeholder="Digite sua senha" required style="padding-right: 3rem;">
+                    <button type="button" aria-label="Mostrar/ocultar senha" title="Mostrar/ocultar senha"
+                        onclick="togglePasswordVisibility()"
+                        style="position:absolute; right:4px; top:50%; transform: translateY(-50%); background:none; border:none; cursor:pointer; font-size:1.1rem; line-height:1;">
+                        👁️
+                    </button>
+                </div>
+            </div>
+            <button type="submit">Entrar</button>
+            <div id="loadingMessage" style="display:none; color: #2e70ce; margin-top: 10px;">Autenticando e verificando registros...</div>
+            <div id="errorMessage" class="error-message">Credenciais inválidas.</div>
+        </form>
+        <div class="alt-actions">
+            <button class="link-btn" onclick="window.location.href='register.html'">Não tenho cadastro</button>
+            <button class="link-btn" onclick="openForgot()">Esqueci minha senha</button>
+        </div>
+
+        <div class="footer">
+            &copy; 2026 Pró-Visão Saúde Ocular Macapá
+        </div>
+    </div>
+    <div id="forgotModal" class="modal">
+        <div class="modal-card">
+            <h3 style="margin:0 0 10px 0;color:#0b2447;">Recuperar senha</h3>
+            <p style="margin:0 0 12px 0;color:#6b7280;">Informe seu e-mail cadastrado para receber uma nova senha provisória.</p>
+            <label for="forgotEmail" style="display:block;margin:6px 0;">E-mail</label>
+            <input id="forgotEmail" type="email" placeholder="seuemail@exemplo.com">
+            <div id="forgotMsg" class="error-message" style="display:none;"></div>
+            <div id="forgotOk" style="display:none;color:#10b981;margin-top:8px;font-size:0.9rem;"></div>
+            <div class="actions">
+                <button class="link-btn" onclick="closeForgot()">Cancelar</button>
+                <button class="link-btn" id="forgotBtn" onclick="submitForgot()">Enviar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openForgot() {
+            document.getElementById('forgotModal').style.display = 'flex';
+            document.getElementById('forgotMsg').style.display = 'none';
+            document.getElementById('forgotOk').style.display = 'none';
+            document.getElementById('forgotEmail').value = '';
+        }
+        function closeForgot() {
+            document.getElementById('forgotModal').style.display = 'none';
+        }
+        async function submitForgot() {
+            const email = document.getElementById('forgotEmail').value.trim();
+            const msg = document.getElementById('forgotMsg');
+            const ok = document.getElementById('forgotOk');
+            const btn = document.getElementById('forgotBtn');
+            msg.style.display = 'none'; ok.style.display = 'none';
+            if (!email) { msg.textContent = 'Informe seu e-mail.'; msg.style.display = 'block'; return; }
+            btn.disabled = true;
+            try {
+                const res = await fetch('/api/auth/forgot', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    ok.textContent = data.message || 'Se existir cadastro, enviaremos a senha ao seu e-mail.';
+                    if (data.provisional_password && data.note) {
+                        ok.textContent += ' Senha provisória: ' + data.provisional_password;
+                    }
+                    ok.style.display = 'block';
+                } else {
+                    msg.textContent = data.error || 'Erro ao solicitar recuperação.';
+                    msg.style.display = 'block';
+                }
+            } catch (e) {
+                msg.textContent = 'Erro de conexão.'; msg.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+            }
+        }
+        function togglePasswordVisibility() {
+            const pwd = document.getElementById('password');
+            pwd.type = (pwd.type === 'password') ? 'text' : 'password';
+        }
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const errorMessage = document.getElementById('errorMessage');
+            const loadingMessage = document.getElementById('loadingMessage');
+            const submitBtn = this.querySelector('button');
+
+            errorMessage.style.display = 'none';
+            loadingMessage.style.display = 'block';
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    // Salva sessão
+                    sessionStorage.setItem('vizô_auth', 'true');
+                    sessionStorage.setItem('vizô_user', username);
+                    
+                    // Redireciona para Google Auth ou Dashboard
+                    window.location.href = data.redirect_url;
+                } else {
+                    errorMessage.textContent = data.error || 'Erro ao autenticar.';
+                    errorMessage.style.display = 'block';
+                    loadingMessage.style.display = 'none';
+                    submitBtn.disabled = false;
+                }
+            } catch (err) {
+                console.error(err);
+                errorMessage.textContent = 'Erro de conexão com o servidor.';
+                errorMessage.style.display = 'block';
+                loadingMessage.style.display = 'none';
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
